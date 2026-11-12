@@ -116,7 +116,13 @@ impl RewebcamApp {
 
         let src = &frame.pixels;
         if step == 1 {
-            for (dst, s) in self.preview_rgb.chunks_exact_mut(3).zip(src.chunks_exact(3)) {
+            for (dst, s) in self
+                .preview_rgb
+                .as_chunks_mut::<3>()
+                .0
+                .iter_mut()
+                .zip(src.as_chunks::<3>().0.iter())
+            {
                 dst[0] = s[2];
                 dst[1] = s[1];
                 dst[2] = s[0];
@@ -152,7 +158,8 @@ impl RewebcamApp {
         if let Some(caps) = &shared.caps {
             // Follow the camera selected on the phone, including changes made
             // from the phone UI (engine mirrors them from the stats frames).
-            if !shared.selected_camera.is_empty() && self.selected_camera != shared.selected_camera {
+            if !shared.selected_camera.is_empty() && self.selected_camera != shared.selected_camera
+            {
                 self.selected_camera = shared.selected_camera.clone();
                 self.selected_resolution = None;
             }
@@ -183,7 +190,11 @@ impl RewebcamApp {
             let valid = self
                 .selected_resolution
                 .as_ref()
-                .map(|r| cam.resolutions.iter().any(|x| x.width == r.width && x.height == r.height))
+                .map(|r| {
+                    cam.resolutions
+                        .iter()
+                        .any(|x| x.width == r.width && x.height == r.height)
+                })
                 .unwrap_or(false);
             if !valid {
                 self.selected_resolution = preferred_resolution(cam);
@@ -305,7 +316,11 @@ impl RewebcamApp {
         if shared.connected {
             ui.horizontal(|ui| {
                 ui.label(RichText::new("●").size(9.0).color(self.strong()));
-                ui.label(RichText::new(&shared.phone_name).size(12.0).color(self.strong()));
+                ui.label(
+                    RichText::new(&shared.phone_name)
+                        .size(12.0)
+                        .color(self.strong()),
+                );
             });
             ui.label(RichText::new(&shared.status).size(10.0).color(self.muted()));
         } else {
@@ -442,7 +457,11 @@ impl RewebcamApp {
                 }
             }
         } else {
-            ui.label(RichText::new("Waiting for phone").size(11.0).color(self.muted()));
+            ui.label(
+                RichText::new("Waiting for phone")
+                    .size(11.0)
+                    .color(self.muted()),
+            );
         }
 
         ui.add_space(6.0);
@@ -454,7 +473,8 @@ impl RewebcamApp {
         let mut torch = shared.torch;
         if ui.checkbox(&mut torch, "Torch").changed() {
             self.engine.shared.lock().torch = torch;
-            self.engine.send_control(Control::SetTorch { enabled: torch });
+            self.engine
+                .send_control(Control::SetTorch { enabled: torch });
         }
         let mut zoom = shared.zoom;
         if ui
@@ -486,10 +506,7 @@ impl RewebcamApp {
     fn output_ui(&mut self, ui: &mut egui::Ui, shared: &crate::engine::Shared) {
         self.section(ui, "OUTPUT");
         let mut enabled = self.engine.vcam_enabled();
-        if ui
-            .checkbox(&mut enabled, "Virtual camera")
-            .changed()
-        {
+        if ui.checkbox(&mut enabled, "Virtual camera").changed() {
             self.engine.set_vcam_enabled(enabled);
         }
         let state = if shared.vcam_active {
@@ -567,11 +584,7 @@ impl RewebcamApp {
                     .width(ui.available_width())
                     .show_ui(ui, |ui| {
                         for name in &self.device_names {
-                            ui.selectable_value(
-                                &mut monitor_dev,
-                                name.clone(),
-                                short_device(name),
-                            );
+                            ui.selectable_value(&mut monitor_dev, name.clone(), short_device(name));
                         }
                     });
                 if monitor_dev != self.monitor_device {
@@ -582,18 +595,18 @@ impl RewebcamApp {
                     }
                 }
 
-                ui.label(RichText::new("Virtual cable").size(10.0).color(self.muted()));
+                ui.label(
+                    RichText::new("Virtual cable")
+                        .size(10.0)
+                        .color(self.muted()),
+                );
                 let mut virtual_dev = self.virtual_device.clone();
                 egui::ComboBox::from_id_salt("virtual_dev")
                     .selected_text(short_device(&virtual_dev))
                     .width(ui.available_width())
                     .show_ui(ui, |ui| {
                         for name in &self.device_names {
-                            ui.selectable_value(
-                                &mut virtual_dev,
-                                name.clone(),
-                                short_device(name),
-                            );
+                            ui.selectable_value(&mut virtual_dev, name.clone(), short_device(name));
                         }
                     });
                 if virtual_dev != self.virtual_device {
@@ -619,10 +632,7 @@ impl RewebcamApp {
                 if self.monitor_enabled {
                     let mut monitor_vol = self.audio.monitor_sink.volume();
                     if ui
-                        .add(
-                            egui::Slider::new(&mut monitor_vol, 0.0..=1.5)
-                                .text("Monitor level"),
-                        )
+                        .add(egui::Slider::new(&mut monitor_vol, 0.0..=1.5).text("Monitor level"))
                         .changed()
                     {
                         self.audio.monitor_sink.set_volume(monitor_vol);
@@ -664,9 +674,7 @@ impl RewebcamApp {
 
                 if let Some(tex) = &self.texture {
                     let size = tex.size_vec2();
-                    let scale = (rect.width() / size.x)
-                        .min(rect.height() / size.y)
-                        .min(1.0);
+                    let scale = (rect.width() / size.x).min(rect.height() / size.y).min(1.0);
                     let draw = size * scale;
                     let target = Rect::from_center_size(rect.center(), draw);
                     let uv = if self.mirror_preview {
@@ -679,7 +687,10 @@ impl RewebcamApp {
                     let shared = self.engine.shared.lock().clone();
                     let text = format!(
                         "{}×{}   {:.0} ms   {:.0} kbps",
-                        shared.video_width, shared.video_height, shared.latency_ms, shared.received_kbps
+                        shared.video_width,
+                        shared.video_height,
+                        shared.latency_ms,
+                        shared.received_kbps
                     );
                     let galley = painter.layout_no_wrap(
                         text,
@@ -748,7 +759,10 @@ impl RewebcamApp {
                 });
                 ui.horizontal(|ui| {
                     ui.label("Background");
-                    if ui.color_edit_button_srgb(&mut self.theme.background).changed() {
+                    if ui
+                        .color_edit_button_srgb(&mut self.theme.background)
+                        .changed()
+                    {
                         self.theme.kind = ThemeKind::Custom;
                         self.theme_dirty = true;
                     }
@@ -760,7 +774,10 @@ impl RewebcamApp {
                         self.theme_dirty = true;
                     }
                 });
-                if ui.checkbox(&mut self.theme.light, "Light background").changed() {
+                if ui
+                    .checkbox(&mut self.theme.light, "Light background")
+                    .changed()
+                {
                     self.theme.kind = ThemeKind::Custom;
                     self.theme_dirty = true;
                 }
@@ -778,12 +795,7 @@ impl RewebcamApp {
         if ui.available_height() > 0.0 {
             ui.add_space(12.0);
         }
-        ui.label(
-            RichText::new(title)
-                .size(9.0)
-                .strong()
-                .color(self.muted()),
-        );
+        ui.label(RichText::new(title).size(9.0).strong().color(self.muted()));
         ui.add_space(3.0);
     }
 
@@ -862,7 +874,11 @@ fn preferred_resolution(cam: &CameraInfo) -> Option<ResolutionInfo> {
     cam.resolutions
         .iter()
         .find(|r| r.width == 1920 && r.height == 1080)
-        .or_else(|| cam.resolutions.iter().find(|r| r.width == 1280 && r.height == 720))
+        .or_else(|| {
+            cam.resolutions
+                .iter()
+                .find(|r| r.width == 1280 && r.height == 720)
+        })
         .or_else(|| cam.resolutions.first())
         .cloned()
 }
@@ -879,7 +895,11 @@ fn short_device(name: &str) -> String {
 
 fn audio_meter(ui: &mut egui::Ui, label: &str, level: f32, color: Color32) {
     ui.horizontal(|ui| {
-        ui.label(RichText::new(label).size(9.0).color(Color32::from_gray(140)));
+        ui.label(
+            RichText::new(label)
+                .size(9.0)
+                .color(Color32::from_gray(140)),
+        );
         let (rect, _) = ui.allocate_exact_size(
             egui::vec2(ui.available_width() - 4.0, 6.0),
             egui::Sense::hover(),

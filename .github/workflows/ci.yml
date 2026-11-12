@@ -93,8 +93,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Show the Android SDK
+        run: |
+          Write-Host "ANDROID_HOME=$env:ANDROID_HOME"
+          Write-Host "ANDROID_SDK_ROOT=$env:ANDROID_SDK_ROOT"
+          sdkmanager --list_installed 2>$null | Select-Object -First 20
 
       - name: Build the APK
         working-directory: android

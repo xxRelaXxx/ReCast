@@ -397,6 +397,7 @@ fn listener_loop(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn handle_client(
     mut stream: TcpStream,
     shared: Arc<Mutex<Shared>>,
@@ -494,9 +495,7 @@ fn handle_client(
         })
         .ok();
 
-    let _ = out_tx.send(
-        Frame::json(T_CONTROL, 0, 0, &Control::Start).unwrap(),
-    );
+    let _ = out_tx.send(Frame::json(T_CONTROL, 0, 0, &Control::Start).unwrap());
 
     // Latency ping loop for this session.
     {
@@ -661,7 +660,7 @@ fn handle_client(
                     // for a moment after a desktop control was sent.
                     let quiet = s
                         .last_control_at
-                        .map_or(true, |t| t.elapsed() > Duration::from_millis(1800));
+                        .is_none_or(|t| t.elapsed() > Duration::from_millis(1800));
                     if quiet {
                         if !stats.camera_id.is_empty() {
                             s.selected_camera = stats.camera_id.clone();
@@ -669,10 +668,7 @@ fn handle_client(
                         if stats.width > 0 && stats.height > 0 {
                             let camera_id = s.selected_camera.clone();
                             let cam = s.caps.as_ref().and_then(|c| {
-                                c.cameras
-                                    .iter()
-                                    .find(|x| x.id == camera_id)
-                                    .cloned()
+                                c.cameras.iter().find(|x| x.id == camera_id).cloned()
                             });
                             if let Some(cam) = cam {
                                 if let Some(r) = cam
@@ -717,7 +713,8 @@ fn handle_client(
                         .map(|d| d.as_micros() as u64)
                         .unwrap_or(0);
                     if now > sent {
-                        shared.lock().latency_ms = ((now - sent) as f32 / 1000.0).clamp(0.0, 5000.0);
+                        shared.lock().latency_ms =
+                            ((now - sent) as f32 / 1000.0).clamp(0.0, 5000.0);
                     }
                 }
             }
@@ -772,7 +769,9 @@ fn choose_resolution(cam: &CameraInfo) -> Option<ResolutionInfo> {
 
 fn pcm_bytes_to_i16(bytes: &[u8]) -> Vec<i16> {
     bytes
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|c| i16::from_le_bytes([c[0], c[1]]))
         .collect()
 }
@@ -883,6 +882,7 @@ fn decoder_loop(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn start_ffmpeg(
     width: u32,
     height: u32,
@@ -893,9 +893,8 @@ fn start_ffmpeg(
     shared: Arc<Mutex<Shared>>,
     latest: Arc<Mutex<Option<PreviewFrame>>>,
 ) -> Result<(Child, std::process::ChildStdin), String> {
-    let ffmpeg = find_ffmpeg().ok_or_else(|| {
-        "ffmpeg.exe not found next to Rewebcam or in tools/ffmpeg".to_string()
-    })?;
+    let ffmpeg = find_ffmpeg()
+        .ok_or_else(|| "ffmpeg.exe not found next to Rewebcam or in tools/ffmpeg".to_string())?;
 
     let (out_w, out_h) = if rotation == 90 || rotation == 270 {
         (height, width)
@@ -1158,11 +1157,7 @@ fn adb_setup(pin: &str, shared: &Arc<Mutex<Shared>>) -> Result<String, String> {
     push_log(&mut shared.lock(), "USB reverse tunnel ready".to_string());
     let install = run_cmd(
         &adb,
-        &[
-            "install",
-            "-r",
-            apk.to_str().ok_or("bad APK path")?,
-        ],
+        &["install", "-r", apk.to_str().ok_or("bad APK path")?],
     )?;
     push_log(&mut shared.lock(), install.trim().to_string());
 
@@ -1203,10 +1198,9 @@ fn find_adb() -> Option<PathBuf> {
             }
         }
     }
-    for p in [PathBuf::from(r"C:\platform-tools\adb.exe")] {
-        if p.is_file() {
-            return Some(p);
-        }
+    let fallback = PathBuf::from(r"C:\platform-tools\adb.exe");
+    if fallback.is_file() {
+        return Some(fallback);
     }
     if let Ok(local) = std::env::var("LOCALAPPDATA") {
         let p = PathBuf::from(local)

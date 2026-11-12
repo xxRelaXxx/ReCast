@@ -15,8 +15,7 @@ use std::process::Command;
 
 use windows_sys::Win32::Foundation::{CloseHandle, BOOL, HWND, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-    CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
-    TH32CS_SNAPPROCESS,
+    CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
 };
 use windows_sys::Win32::System::Registry::{
     RegCloseKey, RegCreateKeyExW, RegDeleteTreeW, RegSetValueExW, HKEY, HKEY_CURRENT_USER,
@@ -116,7 +115,10 @@ fn run(skip_setup_prompt: bool) -> Result<(), String> {
     }
 
     register_virtual_camera(&install_dir)?;
-    log_line(&install_dir, "Virtual camera registered for the current user.");
+    log_line(
+        &install_dir,
+        "Virtual camera registered for the current user.",
+    );
 
     // Remove the pre-rebrand camera entry and add the firewall rule once.
     let setup_marker = install_dir.join(".setup-complete");
@@ -140,7 +142,10 @@ fn run(skip_setup_prompt: bool) -> Result<(), String> {
     }
 
     if is_app_running(&install_dir) {
-        log_line(&install_dir, "Rewebcam is already running; focusing its window.");
+        log_line(
+            &install_dir,
+            "Rewebcam is already running; focusing its window.",
+        );
         focus_app_window();
         return Ok(());
     }
@@ -227,19 +232,18 @@ fn register_virtual_camera(install_dir: &Path) -> Result<(), String> {
             "{classes_root}\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{OLD_FILTER_NAME}"
         ));
 
-        for (clsid, name) in [
-            (NEW_CLSID, FILTER_NAME),
-            (LEGACY_CLSID, OLD_FILTER_NAME),
-        ] {
+        for (clsid, name) in [(NEW_CLSID, FILTER_NAME), (LEGACY_CLSID, OLD_FILTER_NAME)] {
             let base = format!("{classes_root}\\CLSID\\{clsid}");
             reg_set_string(&base, None, name)?;
             reg_set_string(&format!("{base}\\InprocServer32"), None, dll)?;
-            reg_set_string(&format!("{base}\\InprocServer32"), Some("ThreadingModel"), "Both")?;
+            reg_set_string(
+                &format!("{base}\\InprocServer32"),
+                Some("ThreadingModel"),
+                "Both",
+            )?;
         }
 
-        let instance = format!(
-            "{classes_root}\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{FILTER_NAME}"
-        );
+        let instance = format!("{classes_root}\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{FILTER_NAME}");
         reg_set_string(&instance, Some("FriendlyName"), FILTER_NAME)?;
         reg_set_string(&instance, Some("CLSID"), NEW_CLSID)?;
         reg_set_binary(&instance, Some("FilterData"), &FILTER_DATA)?;
@@ -251,7 +255,10 @@ fn register_virtual_camera(install_dir: &Path) -> Result<(), String> {
 fn reg_set_string(path: &str, name: Option<&str>, value: &str) -> Result<(), String> {
     let wide: Vec<u16> = value.encode_utf16().chain(std::iter::once(0)).collect();
     let bytes = unsafe {
-        std::slice::from_raw_parts(wide.as_ptr() as *const u8, wide.len() * std::mem::size_of::<u16>())
+        std::slice::from_raw_parts(
+            wide.as_ptr() as *const u8,
+            wide.len() * std::mem::size_of::<u16>(),
+        )
     };
     reg_set(path, name, REG_SZ, bytes)
 }
@@ -267,16 +274,8 @@ fn reg_set(path: &str, name: Option<&str>, kind: u32, data: &[u8]) -> Result<(),
         .as_ref()
         .map(|value| value.as_ptr())
         .unwrap_or(std::ptr::null());
-    let result = unsafe {
-        RegSetValueExW(
-            key,
-            name_ptr,
-            0,
-            kind,
-            data.as_ptr(),
-            data.len() as u32,
-        )
-    };
+    let result =
+        unsafe { RegSetValueExW(key, name_ptr, 0, kind, data.as_ptr(), data.len() as u32) };
     unsafe {
         RegCloseKey(key);
     }
@@ -322,9 +321,8 @@ fn delete_registry_tree(path: &str) {
 }
 
 fn old_machine_entry_exists() -> bool {
-    let key = format!(
-        "HKLM\\SOFTWARE\\Classes\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{OLD_FILTER_NAME}"
-    );
+    let key =
+        format!("HKLM\\SOFTWARE\\Classes\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{OLD_FILTER_NAME}");
     command_ok("reg", &["query", &key])
 }
 
@@ -437,7 +435,10 @@ fn is_app_running(install_dir: &Path) -> bool {
 fn app_pids(install_dir: &Path) -> Vec<u32> {
     // Compare full paths, not image names: "Rewebcam.exe" (this launcher) and
     // "rewebcam.exe" (the app) are the same name to case-insensitive Windows.
-    let app_path = install_dir.join("rewebcam.exe").to_string_lossy().to_lowercase();
+    let app_path = install_dir
+        .join("rewebcam.exe")
+        .to_string_lossy()
+        .to_lowercase();
 
     let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
     if snapshot == INVALID_HANDLE_VALUE {

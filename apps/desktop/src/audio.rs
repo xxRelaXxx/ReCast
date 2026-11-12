@@ -209,10 +209,7 @@ impl AudioEngine {
             "steam streaming speakers",
         ];
         for needle in needles {
-            if let Some(name) = devices
-                .iter()
-                .find(|n| n.to_lowercase().contains(needle))
-            {
+            if let Some(name) = devices.iter().find(|n| n.to_lowercase().contains(needle)) {
                 return Some(name.clone());
             }
         }

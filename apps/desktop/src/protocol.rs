@@ -48,7 +48,10 @@ impl Frame {
 
 pub fn write_frame<W: Write>(writer: &mut W, frame: &Frame) -> io::Result<()> {
     if frame.payload.len() > MAX_PAYLOAD {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "payload too large"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "payload too large",
+        ));
     }
     let mut header = [0u8; HEADER_LEN];
     header[0..4].copy_from_slice(MAGIC);
@@ -71,7 +74,10 @@ pub fn read_frame<R: Read>(reader: &mut R) -> io::Result<Option<Frame>> {
                 if got == 0 {
                     return Ok(None);
                 }
-                return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "partial header"));
+                return Err(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "partial header",
+                ));
             }
             Ok(n) => got += n,
             Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
@@ -87,7 +93,10 @@ pub fn read_frame<R: Read>(reader: &mut R) -> io::Result<Option<Frame>> {
     let flags = header[5];
     let len = u32::from_le_bytes([header[8], header[9], header[10], header[11]]) as usize;
     if len > MAX_PAYLOAD {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "payload too large"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "payload too large",
+        ));
     }
     let mut payload = vec![0u8; len];
     reader.read_exact(&mut payload)?;

@@ -131,5 +131,10 @@ fn locate_dll() -> Option<PathBuf> {
 pub fn dll_display_name() -> String {
     locate_dll()
         .map(|p| p.display().to_string())
-        .unwrap_or_else(|| CString::new("not found").unwrap().to_string_lossy().into_owned())
+        .unwrap_or_else(|| {
+            CString::new("not found")
+                .unwrap()
+                .to_string_lossy()
+                .into_owned()
+        })
 }
