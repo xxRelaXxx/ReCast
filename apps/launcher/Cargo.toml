@@ -1,0 +1,31 @@
+[package]
+name = "rewebcam-launcher"
+version = "1.0.0"
+edition = "2021"
+description = "Single-file launcher and installer for Rewebcam"
+build = "build.rs"
+
+[[bin]]
+name = "Rewebcam"
+path = "src/main.rs"
+
+[dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[build-dependencies]
+winres = "0.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Rewebcam Phone</string>
+    <string name="title">REWEBCAM PHONE</string>
+    <string name="subtitle">Phone camera and microphone for your PC</string>
+    <string name="pc_address">PC ADDRESS</string>
+    <string name="camera_label">CAMERA</string>
+    <string name="resolution_label">RESOLUTION</string>
+    <string name="zoom_label">ZOOM</string>
+</resources>

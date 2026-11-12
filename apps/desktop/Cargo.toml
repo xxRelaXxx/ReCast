@@ -1,0 +1,18 @@
+[package]
+name = "rewebcam"
+version = "1.0.0"
+edition = "2021"
+description = "Use an Android phone as a low-latency webcam and microphone on Windows"
+
+[dependencies]
+eframe = "0.31"
+egui = "0.31"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+crossbeam-channel = "0.5"
+parking_lot = "0.12"
+rand = "0.9"
+local-ip-address = "0.6"
+libloading = "0.9"
+cpal = "0.18"
+nnnoiseless = { version = "0.5.2", default-features = false }

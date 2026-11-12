@@ -1,0 +1,7 @@
+# Build input for the single-file launcher.
+#
+# tools/build-release.ps1 fills this folder with the compiled runtime before
+# building Rewebcam.exe. The payload is not stored in git because it is also
+# produced by that script.
+*
+!.gitignore

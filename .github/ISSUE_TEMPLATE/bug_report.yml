@@ -1,0 +1,80 @@
+name: Bug report
+description: Something does not work as expected
+title: ""
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear description of the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: false
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+    validations:
+      required: false
+
+  - type: input
+    id: phone
+    attributes:
+      label: Phone model and Android version
+      placeholder: Pixel 7, Android 14
+    validations:
+      required: false
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: How was the phone connected
+      options:
+        - USB
+        - Wi-Fi
+        - Not connected yet
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Rewebcam version
+      placeholder: v1.0.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra information
+      description: |
+        Screenshots, the content of %LOCALAPPDATA%\Rewebcam\launcher.log, or the
+        error message shown under the connection panel.
+    validations:
+      required: false
