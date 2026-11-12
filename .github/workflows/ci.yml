@@ -97,7 +97,10 @@ jobs:
         run: |
           Write-Host "ANDROID_HOME=$env:ANDROID_HOME"
           Write-Host "ANDROID_SDK_ROOT=$env:ANDROID_SDK_ROOT"
-          sdkmanager --list_installed 2>$null | Select-Object -First 20
+          if (Test-Path $env:ANDROID_HOME) {
+            Get-ChildItem (Join-Path $env:ANDROID_HOME 'platforms') -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty Name
+          }
 
       - name: Build the APK
         working-directory: android
