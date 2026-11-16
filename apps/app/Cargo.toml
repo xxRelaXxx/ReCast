@@ -1,6 +1,6 @@
 [package]
 name = "recast-app"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 description = "Use an Android phone as a low-latency webcam and microphone on Windows"
 license = "MIT"

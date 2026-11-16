@@ -260,6 +260,28 @@ void FrameBuffer::transferToDIB(void* image_bits, uint64_t* out_frame_counter)
     }
 }
 
+bool FrameBuffer::copyImage(void* dest, std::size_t dest_bytes, int* out_width, int* out_height, uint64_t* out_frame_counter)
+{
+    std::lock_guard<NamedMutex> lock(m_mutex);
+    if (!m_shmem)
+    {
+        return false;
+    }
+    auto frame = header();
+    int w = frame->m_width;
+    int h = frame->m_height;
+    if (out_width) *out_width = w;
+    if (out_height) *out_height = h;
+    if (out_frame_counter) *out_frame_counter = frame->m_frame_counter;
+    std::size_t need = (std::size_t)w * (std::size_t)h * 3;
+    if (!dest || dest_bytes < need)
+    {
+        return false;
+    }
+    std::memcpy(dest, frame->imageData(), need);
+    return true;
+}
+
 bool FrameBuffer::waitForNewFrame(uint64_t frame_counter, float time_out)
 {
     if (!m_shmem) return false;

@@ -267,12 +267,13 @@ TEST_F(Softcam, AttributesIncompatibleSender)
     EXPECT_EQ( m_softcam->getFrameBuffer(), nullptr );
 
     fb.reset();
-    fb = createFrameBufer(640, 480, 60);                // <<<
+    fb = createFrameBufer(640, 480, 60);
 
-    EXPECT_EQ( m_softcam->getFrameBuffer(), nullptr );    // <<<
+    // A new sender size is still the same camera. Consumers scale.
+    EXPECT_NE( m_softcam->getFrameBuffer(), nullptr );
     EXPECT_EQ( m_softcam->valid(), true );
-    EXPECT_EQ( m_softcam->width(), 320 );
-    EXPECT_EQ( m_softcam->height(), 240 );
+    EXPECT_EQ( m_softcam->width(), 640 );
+    EXPECT_EQ( m_softcam->height(), 480 );
     EXPECT_EQ( m_softcam->framerate(), 60.0f );
 }
 
@@ -286,8 +287,11 @@ TEST_F(Softcam, IAMStreamConfigNoServer)
     IAMStreamConfig *amsc = m_softcam;
     AM_MEDIA_TYPE *pmt = nullptr;
     hr = amsc->GetFormat(&pmt);
-    EXPECT_EQ( hr, E_FAIL );
-    EXPECT_EQ( pmt, nullptr );
+    EXPECT_EQ( hr, S_OK );
+    ASSERT_NE( pmt, nullptr );
+    EXPECT_EQ( pmt->subtype, MEDIASUBTYPE_RGB24 );
+    DeleteMediaType(pmt);
+    pmt = nullptr;
 
     AM_MEDIA_TYPE mt{};
     hr = amsc->SetFormat(&mt);
@@ -295,13 +299,15 @@ TEST_F(Softcam, IAMStreamConfigNoServer)
 
     int count = 55, size = 77;
     hr = amsc->GetNumberOfCapabilities(&count, &size);
-    EXPECT_EQ( hr, E_FAIL );
-    EXPECT_EQ( count, 55 );
-    EXPECT_EQ( size, 77 );
+    EXPECT_EQ( hr, S_OK );
+    EXPECT_GT( count, 1 );
+    EXPECT_GE( size, (int)sizeof(VIDEO_STREAM_CONFIG_CAPS) );
 
     BYTE scc[sizeof(VIDEO_STREAM_CONFIG_CAPS)];
     hr = amsc->GetStreamCaps(0, &pmt, scc);
-    EXPECT_EQ( hr, E_FAIL );
+    EXPECT_EQ( hr, S_OK );
+    ASSERT_NE( pmt, nullptr );
+    DeleteMediaType(pmt);
 }
 
 TEST_F(Softcam, IAMStreamConfigNullPointer)
@@ -359,7 +365,7 @@ TEST_F(Softcam, IAMStreamConfigNormal)
     int count = 55, size = 77;
     hr = amsc->GetNumberOfCapabilities(&count, &size);
     EXPECT_EQ( hr, S_OK );
-    EXPECT_EQ( count, 1 );
+    EXPECT_GT( count, 1 );
     EXPECT_GE( size, (int)sizeof(VIDEO_STREAM_CONFIG_CAPS) );
 
     size = (std::max)((int)sizeof(VIDEO_STREAM_CONFIG_CAPS), size);
@@ -367,9 +373,22 @@ TEST_F(Softcam, IAMStreamConfigNormal)
     hr = amsc->GetStreamCaps(0, &pmt, scc.get());
     EXPECT_EQ( hr, S_OK );
     checkMediaType320x240( pmt );
-
     DeleteMediaType(pmt);
     pmt = nullptr;
+
+    bool saw_yuy2 = false;
+    for (int i = 0; i < count; i++)
+    {
+        hr = amsc->GetStreamCaps(i, &pmt, scc.get());
+        EXPECT_EQ( hr, S_OK );
+        if (pmt && pmt->subtype == MEDIASUBTYPE_YUY2)
+        {
+            saw_yuy2 = true;
+        }
+        DeleteMediaType(pmt);
+        pmt = nullptr;
+    }
+    EXPECT_TRUE( saw_yuy2 );
 }
 
 TEST_F(Softcam, IBaseFilterEnumPins)
@@ -546,8 +565,10 @@ TEST_F(SoftcamStream, IPinEnumMediaTypes)
     ppmt[0] = nullptr;
 
     hr = enum_media_types->Next(1, ppmt, &fetched);
-    EXPECT_EQ( hr, S_FALSE );
-    EXPECT_EQ( fetched, 0u );
+    EXPECT_EQ( hr, S_OK );
+    EXPECT_EQ( fetched, 1u );
+    EXPECT_NE( ppmt[0], nullptr );
+    if (ppmt[0]) DeleteMediaType(ppmt[0]);
 
     enum_media_types->Release();
 }
@@ -613,8 +634,10 @@ TEST_F(SoftcamStream, IAMStreamConfigNoServer)
     IAMStreamConfig *amsc = m_stream;
     AM_MEDIA_TYPE *pmt = nullptr;
     hr = amsc->GetFormat(&pmt);
-    EXPECT_EQ( hr, E_FAIL );
-    EXPECT_EQ( pmt, nullptr );
+    EXPECT_EQ( hr, S_OK );
+    ASSERT_NE( pmt, nullptr );
+    DeleteMediaType(pmt);
+    pmt = nullptr;
 
     AM_MEDIA_TYPE mt{};
     hr = amsc->SetFormat(&mt);
@@ -622,13 +645,15 @@ TEST_F(SoftcamStream, IAMStreamConfigNoServer)
 
     int count = 55, size = 77;
     hr = amsc->GetNumberOfCapabilities(&count, &size);
-    EXPECT_EQ( hr, E_FAIL );
-    EXPECT_EQ( count, 55 );
-    EXPECT_EQ( size, 77 );
+    EXPECT_EQ( hr, S_OK );
+    EXPECT_GT( count, 1 );
+    EXPECT_GE( size, (int)sizeof(VIDEO_STREAM_CONFIG_CAPS) );
 
     BYTE scc[sizeof(VIDEO_STREAM_CONFIG_CAPS)];
     hr = amsc->GetStreamCaps(0, &pmt, scc);
-    EXPECT_EQ( hr, E_FAIL );
+    EXPECT_EQ( hr, S_OK );
+    ASSERT_NE( pmt, nullptr );
+    DeleteMediaType(pmt);
 }
 
 TEST_F(SoftcamStream, IAMStreamConfigNullPointer)
@@ -683,7 +708,7 @@ TEST_F(SoftcamStream, IAMStreamConfigNormal)
     int count = 55, size = 77;
     hr = amsc->GetNumberOfCapabilities(&count, &size);
     EXPECT_EQ( hr, S_OK );
-    EXPECT_EQ( count, 1 );
+    EXPECT_GT( count, 1 );
     EXPECT_GE( size, (int)sizeof(VIDEO_STREAM_CONFIG_CAPS) );
 
     size = (std::max)((int)sizeof(VIDEO_STREAM_CONFIG_CAPS), size);
@@ -893,7 +918,8 @@ TEST_F(SoftcamStream, CSourceStreamGetMediaTypeNoServer)
 
     CMediaType mt;
     hr = m_stream->GetMediaType(&mt);
-    EXPECT_EQ( hr, E_FAIL );
+    EXPECT_EQ( hr, NOERROR );
+    EXPECT_EQ( mt.subtype, MEDIASUBTYPE_RGB24 );
 }
 
 TEST_F(SoftcamStream, CSourceStreamGetMediaTypeNullPointer)

@@ -241,8 +241,19 @@ impl AudioEngine {
             "droidcam audio",
             "steam streaming speakers",
         ];
+        // The playback side is what ReCast writes to. Opening the recording
+        // side here would hold the microphone the browser is trying to use.
+        let is_capture_side = |name: &str| {
+            let lower = name.to_lowercase();
+            lower.contains("microphone")
+                || lower.contains("cable output")
+                || lower.contains("recording")
+        };
         for needle in needles {
-            if let Some(name) = devices.iter().find(|n| n.to_lowercase().contains(needle)) {
+            if let Some(name) = devices
+                .iter()
+                .find(|n| n.to_lowercase().contains(needle) && !is_capture_side(n))
+            {
                 return Some(name.clone());
             }
         }
@@ -270,6 +281,13 @@ impl AudioEngine {
         self.virtual_mic = None;
         if name.trim().is_empty() {
             return Err("No virtual audio cable selected".to_string());
+        }
+        let lower = name.to_lowercase();
+        if lower.contains("microphone") || lower.contains("cable output") {
+            return Err(
+                "That device is the recording side of the cable. Pick the playback side, such as \"CABLE Input\", so the browser can open the microphone."
+                    .to_string(),
+            );
         }
         let stream = self.build_stream(name, self.mic_sink.clone())?;
         stream.play().map_err(|e| e.to_string())?;

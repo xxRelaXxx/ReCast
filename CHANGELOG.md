@@ -4,6 +4,21 @@ All notable changes to ReCast are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+## [1.0.2] - 2026-11-16
+
+### Changed
+
+- **ReCast Camera** now offers the formats browsers and meeting apps connect (I420,
+  YUY2, UYVY, RGB24 and RGB32 at the usual sizes and frame rates) and scales the
+  phone picture into the mode the site requests. A site that used to say the camera
+  was already in use, or that it did not support the camera, can open it after the
+  browser is fully restarted.
+- **Virtual microphone** selection skips the recording side of a virtual cable, so
+  ReCast does not open the device the browser has to use. The site still records
+  from that side (for example *CABLE Output*) while ReCast plays into *CABLE Input*.
+
 ## [1.0.1] - 2026-11-16
 
 A new interface, separate camera and microphone modes, a USB connection that needs no
@@ -97,4 +112,6 @@ The first public release.
 - Video and audio travel directly between the phone and the PC and never leave the
   local network or the USB link.
 
+[1.0.2]: https://github.com/xxRelaXxx/ReWebCam/releases/tag/v1.0.2
+[1.0.1]: https://github.com/xxRelaXxx/ReWebCam/releases/tag/v1.0.1
 [1.0.0]: https://github.com/xxRelaXxx/ReCast/releases/tag/v1.0.0

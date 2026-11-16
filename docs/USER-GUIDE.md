@@ -138,11 +138,13 @@ pick it manually under **Devices**.
 
 ### Browsers and websites
 
-1. Start ReCast, connect the phone and keep **Virtual camera** enabled.
+1. Start ReCast and keep **Virtual camera** enabled. The camera is usable before the
+   phone connects; the picture stays a dark placeholder until a frame arrives.
 2. Open the site and allow camera and microphone when it asks.
 3. Choose *ReCast Camera* in the site's own camera menu. A site that still has
    an old choice such as *OBS Virtual Camera* will show nothing.
-4. Reload the page if it was opened before the phone was connected.
+4. Quit the browser completely (every window) and open it again after a camera
+   update, so it loads the new filter instead of one it already has open.
 
 Some sites request the camera and the microphone in one step and show nothing when either
 one is denied. In Windows, check *Settings > Privacy & security > Microphone* and
@@ -259,8 +261,21 @@ application that records the phone hears the change, and on the speaker monitor.
 * Check that the phone shows "Connected" and the foreground-service notification.
 * The message under the connection panel explains most failures.
 * Try USB, or a phone hotspot if the Wi-Fi isolates clients.
-* Close other virtual camera software. Only one program can own the camera filter at a
-  time, so DroidCam and ReCast cannot run together.
+* Close other programs that feed this camera. ReCast and another sender such as
+  DroidCam cannot write the same camera at the same time. Viewing apps can open it
+  together.
+
+### A website says the camera is already in use, or that it is not supported
+
+* Quit the browser completely, including background windows, then open it again and
+  pick *ReCast Camera*. A browser that still has the previous filter loaded reports
+  the camera as busy or as an unsupported device.
+* Sites that ask for one exact size now receive a normal capture mode (I420, YUY2,
+  UYVY, RGB24 or RGB32). A combined camera-and-microphone request fails both devices
+  when the camera is rejected, so the microphone can look busy as well.
+* Two programs can open ReCast Camera at the same time. Two tabs inside the same
+  Chrome window still share Chrome's one camera process, and that process opens a
+  DirectShow camera only once.
 
 ### A website shows no picture
 
@@ -287,7 +302,10 @@ application that records the phone hears the change, and on the speaker monitor.
 
 * Install a virtual audio cable and check that Windows shows both its playback and its
   recording endpoints.
-* In the other application select the **capture** side of the cable.
+* In the other application select the **recording** side of the cable, such as
+  *CABLE Output* or *Microphone (VB-Audio Virtual Cable)*. ReCast writes the
+  **playback** side, such as *CABLE Input*. Picking the recording side in ReCast
+  takes the microphone the browser needs.
 * Unmute *Phone microphone* and enable *Virtual microphone* in ReCast.
 * Check the *Mic* meter and raise *Mic level* under **Devices** if it stays low.
 

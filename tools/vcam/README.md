@@ -27,8 +27,8 @@ recast-softcam.patch the full diff against upstream v1.8.1
 Checksums of the committed binaries:
 
 ```text
-bae04942099ac338ce9b06f54d29d5a054a570f8a73affd757dcd4b3c09110c4  x64/softcam.dll
-ca8901c205f314722734be459059f1ca60cb36d3ab78a55fb2e9607097117f5f  x86/softcam.dll
+fe9407d07e86e492077902e7cbbbc6d3c557ffdd8f90d86e053b366dfcaaf753  x64/softcam.dll
+4e819a80d6b96dc352989f6bfb2b07c582527c7a669c34f3cba2ce2912e664fa  x86/softcam.dll
 ```
 
 ## Why a fork
@@ -45,9 +45,15 @@ a few changes:
   selected the camera keep working until the old registration is removed.
 * **A version byte** in the frame-buffer protocol, so an old and a new build cannot
   misinterpret each other's frames.
+* **The formats browsers actually connect.** The filter offers I420, YUY2, UYVY, RGB24
+  and RGB32 at the usual sizes (320x240, 640x360, 640x480, 960x540, 1280x720 and
+  1920x1080, at 15, 30 and 60 fps where listed). It scales the sender's picture into
+  the size the application picked, and it still answers when the phone is not connected
+  yet. A camera that offered only one exact RGB24 mode was reported by sites as
+  "already in use" or "not supported".
 
-The complete diff is in `recast-softcam.patch`, so the changes can be reviewed at a
-glance and re-applied to a newer upstream release.
+The rebrand against upstream is in `recast-softcam.patch`. The browser-format work lives
+in the source and has not been folded back into that patch.
 
 ## Building
 

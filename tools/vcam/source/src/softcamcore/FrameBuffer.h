@@ -38,6 +38,9 @@ class FrameBuffer
     void            deactivate();
     void            write(const void* image_bits);
     void            transferToDIB(void* image_bits, uint64_t* out_frame_counter);
+    /// Copies the latest top-down BGR frame. Returns false when there is no
+    /// frame or `dest_bytes` is too small; dimensions are still written.
+    bool            copyImage(void* dest, std::size_t dest_bytes, int* out_width, int* out_height, uint64_t* out_frame_counter);
     bool            waitForNewFrame(uint64_t frame_counter, float time_out = 0.5f);
 
     void            release();

@@ -167,7 +167,10 @@ Changes against upstream v1.8.1 (see `tools/vcam/recast-softcam.patch`):
   applications that already selected the camera keep working;
 * the filter, stream and shared-memory names were renamed to "ReCast Camera";
 * the frame-buffer protocol carries a version byte so old and new builds cannot
-  misinterpret each other's frames.
+  misinterpret each other's frames;
+* the pin offers I420, YUY2, UYVY, RGB24 and RGB32 at the usual capture sizes and
+  frame rates, and scales the shared-memory picture (top-down BGR) into the mode the
+  application connected. The camera can be opened before the phone sends a frame.
 
 The launcher registers the filter under `HKCU\Software\Classes\CLSID` for the 64-bit and
 the 32-bit registry views, and writes the `REGFILTER2` blob that describes the single
