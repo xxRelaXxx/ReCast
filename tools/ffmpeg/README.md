@@ -1,18 +1,18 @@
 # FFmpeg
 
-Rewebcam decodes the H.264 video that the phone sends. It does not implement a video
+ReCast decodes the H.264 video that the phone sends. It does not implement a video
 decoder itself: a small, separate FFmpeg executable does the decoding and the rotation.
 
 ## Why a separate build
 
-The general purpose Windows builds of FFmpeg are around 100 MB. Rewebcam only needs to
+The general purpose Windows builds of FFmpeg are around 100 MB. ReCast only needs to
 turn an H.264 elementary stream into raw pixels and to rotate or mirror them, so this
 directory contains a build with almost everything switched off. It is **2.5 MB** instead
-of 100 MB, it starts in a few milliseconds, and it contains no code that Rewebcam does
+of 100 MB, it starts in a few milliseconds, and it contains no code that ReCast does
 not use.
 
 Keeping FFmpeg as a separate executable also keeps the licence situation simple: the
-program is a work in its own right under the LGPL, and Rewebcam talks to it through
+program is a work in its own right under the LGPL, and ReCast talks to it through
 pipes.
 
 ## The committed binary
@@ -75,7 +75,7 @@ GCC 16.2.0 (MinGW-W64, x86_64-ucrt-posix-seh) and NASM 2.16.
 After rebuilding, update the SHA-256 checksum in this file and in
 `THIRD_PARTY_NOTICES.md`.
 
-## How Rewebcam calls it
+## How ReCast calls it
 
 ```text
 ffmpeg -hide_banner -loglevel error -fflags nobuffer -flags low_delay

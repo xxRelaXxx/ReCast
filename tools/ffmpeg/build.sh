@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Rebuilds the minimal LGPL FFmpeg build that Rewebcam uses to decode the phone video.
+# Rebuilds the minimal LGPL FFmpeg build that ReCast uses to decode the phone video.
 #
 # Run it from an MSYS2 UCRT64 shell:
 #

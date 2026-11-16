@@ -1,10 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Rewebcam Phone</string>
-    <string name="title">REWEBCAM PHONE</string>
+    <string name="app_name">ReCast Phone</string>
+    <string name="title">RECAST PHONE</string>
     <string name="subtitle">Phone camera and microphone for your PC</string>
+    <string name="tagline">Turn this phone into your PC camera and microphone.</string>
     <string name="pc_address">PC ADDRESS</string>
     <string name="camera_label">CAMERA</string>
     <string name="resolution_label">RESOLUTION</string>
     <string name="zoom_label">ZOOM</string>
+    <string name="status_ready">Ready to pair.</string>
+    <string name="status_starting">Starting camera service…</string>
+    <string name="scan_button">Scan the QR code on your PC</string>
+    <string name="or_manually">OR CONNECT MANUALLY</string>
+    <string name="connect">Connect to PC</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="live">LIVE</string>
+    <string name="pairing_help">On the PC, open ReCast. Its start screen shows a QR code and a 6-digit PIN. Both devices must be on the same Wi-Fi network.</string>
+    <string name="scanner_title">SCAN THE CODE ON YOUR PC</string>
+    <string name="scanner_hint">Point the camera at the QR code on the ReCast start screen.</string>
+    <string name="scanner_close">Close</string>
+    <string name="scanner_permission">Camera access is needed to scan the pairing code.</string>
+    <string name="scanner_no_camera">No camera is available on this phone.</string>
+    <string name="scanner_camera_error">The camera could not be started.</string>
+    <string name="scanner_not_recast">That QR code is not a ReCast pairing code.</string>
+    <string name="scanner_success">Pairing with %1$s…</string>
+
+    <!-- Connection form -->
+    <string name="address_label">PC ADDRESS</string>
+    <string name="port_label">PORT</string>
+    <string name="pin_label">PAIRING PIN</string>
+    <string name="address_hint">192.168.1.10</string>
+    <string name="port_hint">47777</string>
+    <string name="pin_hint">6 digits</string>
+    <string name="usb_hint">Over a USB cable the PC is reached at 127.0.0.1.</string>
+
+    <!-- Input cards -->
+    <string name="input_camera_title">CAMERA</string>
+    <string name="input_mic_title">MICROPHONE</string>
+    <string name="input_camera_on">On · sending video</string>
+    <string name="input_camera_off">Off · camera closed</string>
+    <string name="input_mic_on">On · sending audio</string>
+    <string name="input_mic_off">Off · microphone released</string>
+    <string name="torch_title">TORCH</string>
+    <string name="camera_off_title">Camera is off</string>
+    <string name="camera_off_hint">Turn the camera on to send video again.</string>
+    <string name="mic_only_hint">Microphone only. The camera stays closed.</string>
 </resources>

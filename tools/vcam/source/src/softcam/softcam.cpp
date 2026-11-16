@@ -23,7 +23,7 @@ namespace {
 
 // Setup data
 
-const wchar_t FILTER_NAME[] = L"Rewebcam Virtual Camera";
+const wchar_t FILTER_NAME[] = L"ReCast Camera";
 const GUID &FILTER_CLASSID = CLSID_DShowSoftcam;
 
 const AMOVIESETUP_MEDIATYPE s_pin_types[] =

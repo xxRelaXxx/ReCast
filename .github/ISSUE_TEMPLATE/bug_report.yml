@@ -64,7 +64,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Rewebcam version
+      label: ReCast version
       placeholder: v1.0.0
     validations:
       required: false
@@ -74,7 +74,7 @@ body:
     attributes:
       label: Extra information
       description: |
-        Screenshots, the content of %LOCALAPPDATA%\Rewebcam\launcher.log, or the
+        Screenshots, the content of %LOCALAPPDATA%\ReCast\launcher.log, or the
         error message shown under the connection panel.
     validations:
       required: false

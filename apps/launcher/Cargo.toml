@@ -1,15 +1,21 @@
 [package]
-name = "rewebcam-launcher"
+name = "recast-launcher"
 version = "1.0.0"
 edition = "2021"
-description = "Single-file launcher and installer for Rewebcam"
+description = "Single-file launcher and installer for ReCast"
+license = "MIT"
 build = "build.rs"
 
 [[bin]]
-name = "Rewebcam"
+name = "ReCast"
 path = "src/main.rs"
 
 [dependencies]
+recast-core = { path = "../core" }
+eframe = "0.31"
+egui = "0.31"
+egui-phosphor = "0.9"
+raw-window-handle = "0.6"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_Security",

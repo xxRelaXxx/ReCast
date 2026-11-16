@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.rewebcam.phone"
+    namespace = "com.recast.phone"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.rewebcam.phone"
+        applicationId = "com.recast.phone"
         minSdk = 29
         targetSdk = 34
         versionCode = 1
@@ -34,4 +34,7 @@ android {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.24")
+    // Offline QR decoding for the in-app pairing scanner.
+    implementation("com.google.zxing:core:3.5.3")
+    testImplementation("junit:junit:4.13.2")
 }

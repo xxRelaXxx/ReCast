@@ -34,10 +34,40 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Build
-        run: cargo build --release -p rewebcam
+        run: cargo build --release -p recast-app
 
       - name: Lint
-        run: cargo clippy --release -p rewebcam -- -D warnings
+        run: cargo clippy --release -p recast-app -- -D warnings
+
+  cli:
+    name: Command line tool (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-cli-${{ hashFiles('Cargo.lock') }}
+
+      - name: Check the formatting
+        run: cargo fmt --all -- --check
+
+      - name: Build
+        run: cargo build --release -p recast-cli
+
+      - name: Lint
+        run: cargo clippy --release -p recast-cli -- -D warnings
+
+      - name: Test
+        run: cargo test --release -p recast-cli -p recast-core
 
   launcher:
     name: Launcher (Windows)
@@ -66,9 +96,10 @@ jobs:
           $payload = 'apps/launcher/payload'
           New-Item -ItemType Directory -Force "$payload/vcam/x64" | Out-Null
           New-Item -ItemType Directory -Force "$payload/vcam/x86" | Out-Null
-          'placeholder' | Set-Content "$payload/rewebcam.exe"
+          'placeholder' | Set-Content "$payload/recast-app.exe"
+          'placeholder' | Set-Content "$payload/recast-cli.exe"
           'placeholder' | Set-Content "$payload/ffmpeg.exe"
-          'placeholder' | Set-Content "$payload/RewebcamPhone.apk"
+          'placeholder' | Set-Content "$payload/ReCastPhone.apk"
           'placeholder' | Set-Content "$payload/vcam/x64/softcam.dll"
           'placeholder' | Set-Content "$payload/vcam/x86/softcam.dll"
 
@@ -109,6 +140,6 @@ jobs:
       - name: Upload the APK
         uses: actions/upload-artifact@v4
         with:
-          name: RewebcamPhone
+          name: ReCastPhone
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error

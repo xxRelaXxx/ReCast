@@ -1,6 +1,6 @@
 # tools
 
-Helper scripts and the third-party binaries that Rewebcam ships.
+Helper scripts and the third-party binaries that ReCast ships.
 
 | Path | What it is |
 | --- | --- |

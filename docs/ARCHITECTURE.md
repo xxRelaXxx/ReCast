@@ -1,27 +1,32 @@
 # Architecture
 
-Rewebcam is three small programs and one shared protocol.
+ReCast is four small programs and one shared protocol.
 
 ```text
 ┌──────────────────────────┐        ┌───────────────────────────────────────────┐
 │ Android phone            │        │ Windows PC                                 │
 │                          │        │                                           │
-│ CameraController         │        │ apps/launcher  Rewebcam.exe                │
+│ CameraController         │        │ apps/launcher  ReCast.exe                │
 │  └ Camera2 + MediaCodec  │        │   ├ unpacks the runtime                   │
 │     (H.264, 1280x720/    │        │   ├ registers the virtual camera (HKCU)   │
-│      1920x1080 @ 30 fps) │        │   └ one-time elevated setup               │
-│                          │        │                                           │
-│ AudioCapture             │  TCP  │ apps/desktop  rewebcam.exe (egui)         │
-│  └ AudioRecord           │  47777 │   ├ session, protocol, statistics         │
-│     (48 kHz mono PCM)    │ ─────► │   ├ FFmpeg child process (H.264 → RGB)     │
-│                          │        │   ├ RNNoise on the audio path              │
-│ StreamController         │        │   └ softcam.dll  scSendFrame(...)         │
-│  └ Camera2 + AudioRecord │        │       │                                   │
-└──────────────────────────┘        │       ▼                                   │
-                                    │  "Rewebcam Virtual Camera" (DirectShow)    │
+│      1920x1080 @ 30 fps) │        │   ├ installs the CLI and adds it to PATH  │
+│                          │        │   └ one-time elevated setup               │
+│ AudioCapture             │  TCP  │                                           │
+│  └ AudioRecord           │  47777 │ apps/app  recast-app.exe (egui)         │
+│     (48 kHz mono PCM)    │ ─────► │   ├ session, protocol, statistics         │
+│                          │        │   ├ FFmpeg child process (H.264 → RGB)     │
+│ StreamController         │        │   ├ RNNoise on the audio path              │
+│  └ Camera2 + AudioRecord │        │   ├ control channel (loopback only)       │
+└──────────────────────────┘        │   └ softcam.dll  scSendFrame(...)         │
+                                    │       │                                   │
+                                    │       ▼                                   │
+                                    │  "ReCast Camera" (DirectShow)    │
                                     │       │                                   │
                                     │       ▼                                   │
                                     │  Zoom, Discord, OBS, browsers, ...         │
+                                    │                                           │
+                                    │ apps/cli  recast.exe                     │
+                                    │   └ talks to the control channel          │
                                     └───────────────────────────────────────────┘
 ```
 
@@ -31,12 +36,41 @@ Rewebcam is three small programs and one shared protocol.
 
 | Path | What it is |
 | --- | --- |
-| `apps/desktop` | The desktop app: `eframe`/`egui` interface, session handling, decoder bridge, audio output, virtual camera control. |
-| `apps/launcher` | The one-file launcher `Rewebcam.exe`: unpacks the runtime, registers the camera, offers the elevated setup, starts the app, and keeps a single instance. |
-| `android` | The phone app: Kotlin, `Camera2`, `MediaCodec` and `AudioRecord`. |
+| `apps/app` | The desktop app `recast-app.exe`: `eframe`/`egui` interface with a custom title bar, pairing QR code, session handling, decoder bridge, audio output, virtual camera control, control channel. |
+| `apps/cli` | The command line tool `recast.exe`: starts the app, reads and changes its state, installs and removes ReCast. |
+| `apps/core` | The shared library: install paths, the virtual camera registration, the user's PATH and the control channel protocol. |
+| `apps/launcher` | The one-file launcher `ReCast.exe`: unpacks the runtime, registers the camera, installs the CLI, offers the elevated setup, starts the app, and keeps a single instance. |
+| `android` | The phone app: Kotlin, `Camera2`, `MediaCodec`, `AudioRecord`, and the offline ZXing core for the in-app QR scanner. |
 | `tools/ffmpeg` | The minimal LGPL FFmpeg build used to decode the video, plus its licences and build script. |
 | `tools/vcam` | The virtual camera filter (a fork of softcam), the prebuilt x64/x86 DLLs, the full source and the patch against upstream. |
 | `tools/build-release.ps1` | Builds everything and produces the release archive. |
+
+---
+
+## Pairing
+
+Both apps start on a connection screen; the camera controls are not shown until the PC
+has accepted the phone. The desktop app puts everything the phone needs into one small
+URI:
+
+```text
+recast://pair?hosts=192.168.1.82,10.0.0.5&port=47777&pin=123456
+```
+
+* `hosts` lists every usable IPv4 address. Physical private networks (192.168/16,
+  10/8, 172.16/12) come first and virtual adapters from VPNs, VMs, WSL or Docker come
+  last, so a dead adapter cannot block pairing.
+* `port` is the same TCP port the stream uses.
+* `pin` is the one-time code that is also shown on screen.
+
+The desktop renders the URI with the `qrcode` crate. The phone opens its own scanner
+(`QrScannerActivity`, Camera2 plus the offline ZXing core), parses the URI with
+`PairPayload`, and tries each address in order with a 4-second connect timeout. A
+rejected PIN stops immediately instead of retrying the other addresses. Pairing never
+touches an account, a cloud service or the internet.
+
+The format is also accepted as a deep link, so a `recast://pair` link opens the phone
+app with the fields already filled in.
 
 ---
 
@@ -125,13 +159,13 @@ audio device never blocks the network thread.
 project. The filter is a DirectShow source registered under the *Video Input Device*
 category, so every DirectShow and Media Foundation application sees it as a camera.
 
-Changes against upstream v1.8.1 (see `tools/vcam/rewebcam-softcam.patch`):
+Changes against upstream v1.8.1 (see `tools/vcam/recast-softcam.patch`):
 
 * the primary CLSID was changed to `{8E2C0D5B-3F5A-4D7E-9B2C-6A1D4F7E9C31}` so that
-  Rewebcam does not fight with other softcam builds over the shared memory segment;
+  ReCast does not fight with other softcam builds over the shared memory segment;
 * the old CLSID `{AEF3B972-5FA5-4647-9571-358EB472BC9E}` is registered as an alias, so
   applications that already selected the camera keep working;
-* the filter, stream and shared-memory names were renamed to "Rewebcam Virtual Camera";
+* the filter, stream and shared-memory names were renamed to "ReCast Camera";
 * the frame-buffer protocol carries a version byte so old and new builds cannot
   misinterpret each other's frames.
 
@@ -143,19 +177,44 @@ video output pin.
 
 ## The launcher
 
-`apps/launcher` produces the single `desktop/Rewebcam.exe`:
+`apps/launcher` produces the single `desktop/ReCast.exe`:
 
-* the runtime (`rewebcam.exe`, `ffmpeg.exe`, `RewebcamPhone.apk`, both camera DLLs) is
-  embedded with `include_bytes!` and unpacked into `%LOCALAPPDATA%\Rewebcam`;
+* the runtime (`recast-app.exe`, `recast-cli.exe`, `ffmpeg.exe`, `ReCastPhone.apk`, both
+  camera DLLs) is embedded with `include_bytes!` and unpacked into
+  `%LOCALAPPDATA%\ReCast`;
 * files that are already identical are not rewritten, so an update does not fail while
   another application has the camera DLL open;
 * the virtual camera is registered for the current user on every launch;
+* the command line tool is installed into `%LOCALAPPDATA%\ReCast\bin` and that folder is
+  added to the user's PATH;
 * a one-time elevated step removes an old machine-wide camera entry and adds the
   firewall rule;
 * a single instance is enforced by comparing the **full path** of the running process,
-  not its image name — `Rewebcam.exe` and `rewebcam.exe` are the same name to
-  case-insensitive Windows, so an image-name comparison would kill the launcher itself;
-* every step is appended to `%LOCALAPPDATA%\Rewebcam\launcher.log`.
+  not its image name — an image-name comparison would be wrong on case-insensitive
+  Windows, where `ReCast.exe` and `recast.exe` are the same name;
+* every step is appended to `%LOCALAPPDATA%\ReCast\launcher.log`.
+
+---
+
+## The command line tool and the control channel
+
+`apps/cli` builds `recast.exe`, which is installed into `%LOCALAPPDATA%\ReCast\bin` and
+added to the user's PATH. It talks to the running app over a control channel that
+`apps/core` defines:
+
+* the app opens a TCP listener on `127.0.0.1` with an ephemeral port and writes the port
+  and a random 32-character token to `%LOCALAPPDATA%\ReCast\control.json`;
+* the CLI reads that file, connects and exchanges one JSON object per line;
+* every request has to carry the token, and connections that do not come from the
+  loopback interface are refused.
+
+The channel never leaves the machine, and the token is only readable by the user who
+owns the profile directory.
+
+The commands map onto the same engine calls the interface uses, so `recast set
+resolution 1920 1080` and the resolution dropdown in the window do exactly the same
+thing. Changes that belong to the interface, such as the theme, are queued in the shared
+state and picked up by the next frame.
 
 ---
 

@@ -1,6 +1,6 @@
 # Third-party notices
 
-Rewebcam itself is released under the MIT licence (see [LICENSE](LICENSE)). It bundles
+ReCast itself is released under the MIT licence (see [LICENSE](LICENSE)). It bundles
 and links the following third-party components. Each component keeps its own licence.
 
 ---
@@ -9,9 +9,9 @@ and links the following third-party components. Each component keeps its own lic
 
 ### FFmpeg 9.0.2 — LGPL-2.1-or-later
 
-`tools/ffmpeg/ffmpeg.exe` (also embedded in `desktop/Rewebcam.exe`) is the official
+`tools/ffmpeg/ffmpeg.exe` (also embedded in `desktop/ReCast.exe`) is the official
 FFmpeg 9.0.2 source, compiled as a **separate executable** with only the components
-Rewebcam needs. It contains **no GPL code**: `--enable-gpl` and `--enable-nonfree` were
+ReCast needs. It contains **no GPL code**: `--enable-gpl` and `--enable-nonfree` were
 not used, so the result is licensed under LGPL-2.1-or-later.
 
 * Upstream project: <https://ffmpeg.org/>
@@ -24,7 +24,7 @@ not used, so the result is licensed under LGPL-2.1-or-later.
 * The configure line used for the build is recorded in `tools/ffmpeg/README.md` and in
   `tools/ffmpeg/build.sh`.
 
-FFmpeg is used as an external process: Rewebcam writes the H.264 stream to its standard
+FFmpeg is used as an external process: ReCast writes the H.264 stream to its standard
 input and reads decoded raw video from its standard output. The two programs remain
 independent works, which is why the LGPL obligations are met by shipping the source
 alongside the executable.
@@ -34,7 +34,7 @@ alongside the executable.
 The virtual camera filter (`tools/vcam/x64/softcam.dll`, `tools/vcam/x86/softcam.dll`) is
 a fork of the softcam project by tshino. The full source of the fork is included in
 `tools/vcam/source`, and the complete patch against upstream v1.8.1 is in
-`tools/vcam/rewebcam-softcam.patch`.
+`tools/vcam/recast-softcam.patch`.
 
 * Upstream project: <https://github.com/tshino/softcam>
 * Licence file of the fork: `tools/vcam/source/LICENSE`
@@ -104,7 +104,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ## 2. Rust crates
 
-The desktop app and the launcher are Rust programs. The complete list of the 452 crates
+The desktop app and the launcher are Rust programs. The complete list of the 455 crates
 that are compiled into them, with their versions and their declared licences, is in
 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). The exact versions are pinned in
 `Cargo.lock`.
@@ -169,8 +169,14 @@ distributed under the Apache License 2.0:
 
 * <https://github.com/JetBrains/kotlin> — Apache-2.0
 
-The app uses only the Android platform APIs (Camera2, MediaCodec, AudioRecord) and has no
-third-party runtime dependencies.
+The in-app QR scanner uses the core of the ZXing project, which is distributed under
+the Apache License 2.0:
+
+* <https://github.com/zxing/zxing> — Apache-2.0
+
+The rest of the app uses only the Android platform APIs (Camera2, MediaCodec,
+AudioRecord). The scanner is fully offline: it does not use Google Play services,
+analytics or any network service.
 
 ---
 

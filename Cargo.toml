@@ -1,5 +1,5 @@
 [workspace]
-members = ["apps/desktop"]
+members = ["apps/app", "apps/cli", "apps/core"]
 exclude = ["apps/launcher"]
 resolver = "2"
 

@@ -1,16 +1,18 @@
 <#
 .SYNOPSIS
-    Builds Rewebcam: the desktop app, the phone app and the one-file launcher.
+    Builds ReCast: the desktop app, the command line tool, the phone app and
+    the one-file launcher.
 
 .DESCRIPTION
     Puts everything together and produces the release archive:
 
-      1. cargo build --release -p rewebcam
-      2. gradlew assembleRelease                (unless -SkipAndroid)
-      3. stage the runtime into apps\launcher\payload
-      4. cargo build --release --manifest-path apps\launcher\Cargo.toml
-      5. copy the launcher to desktop\Rewebcam.exe and the APK to phone\RewebcamPhone.apk
-      6. write the checksums and create release\ReWebCam-<version>-win64.zip
+      1. cargo build --release -p recast-app
+      2. cargo build --release -p recast-cli
+      3. gradlew assembleRelease                (unless -SkipAndroid)
+      4. stage the runtime into apps\launcher\payload
+      5. cargo build --release --manifest-path apps\launcher\Cargo.toml
+      6. copy the launcher to desktop\ReCast.exe and the APK to phone\ReCastPhone.apk
+      7. write the SHA-256 checksums and create release\ReCast-<version>-win64.zip
 
 .EXAMPLE
     .\tools\build-release.ps1
@@ -51,28 +53,36 @@ function Get-FileSha256([string] $Path) {
     return (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+function Get-CrateVersion([string] $Manifest) {
+    $match = Select-String -Path $Manifest -Pattern '^version\s*=\s*"([^"]+)"'
+    return $match.Matches[0].Groups[1].Value
+}
+
 # ---------------------------------------------------------------------------
 # Versions
 # ---------------------------------------------------------------------------
 
-$desktopVersion = (Select-String -Path (Join-Path $root 'apps\desktop\Cargo.toml') -Pattern '^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
-$launcherVersion = (Select-String -Path (Join-Path $root 'apps\launcher\Cargo.toml') -Pattern '^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+$appVersion = Get-CrateVersion (Join-Path $root 'apps\app\Cargo.toml')
+$cliVersion = Get-CrateVersion (Join-Path $root 'apps\cli\Cargo.toml')
+$coreVersion = Get-CrateVersion (Join-Path $root 'apps\core\Cargo.toml')
+$launcherVersion = Get-CrateVersion (Join-Path $root 'apps\launcher\Cargo.toml')
 $androidVersion = (Select-String -Path (Join-Path $root 'android\app\build.gradle.kts') -Pattern 'versionName\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
 
-if (-not $Version) { $Version = $desktopVersion }
+if (-not $Version) { $Version = $appVersion }
 
-Write-Step "Rewebcam $Version"
-Write-Info "desktop app $desktopVersion, launcher $launcherVersion, phone app $androidVersion"
+Write-Step "ReCast $Version"
+Write-Info "app $appVersion, cli $cliVersion, core $coreVersion, launcher $launcherVersion, phone app $androidVersion"
 
-if ($desktopVersion -ne $launcherVersion -or $desktopVersion -ne $androidVersion) {
-    throw "The versions do not match. Update apps\desktop\Cargo.toml, apps\launcher\Cargo.toml and android\app\build.gradle.kts."
+$versions = @(@($appVersion, $cliVersion, $coreVersion, $launcherVersion, $androidVersion) | Select-Object -Unique)
+if ($versions.Count -ne 1) {
+    throw "The versions do not match. Update the Cargo.toml files and android\app\build.gradle.kts."
 }
 
 # ---------------------------------------------------------------------------
 # 1. Desktop app
 # ---------------------------------------------------------------------------
 
-$desktopExe = Join-Path $root 'target\release\rewebcam.exe'
+$appExe = Join-Path $root 'target\release\recast-app.exe'
 
 if ($SkipDesktop) {
     Write-Step 'Desktop app (skipped)'
@@ -80,16 +90,36 @@ if ($SkipDesktop) {
     Write-Step 'Building the desktop app'
     Push-Location $root
     try {
-        cargo build --release -p rewebcam
+        cargo build --release -p recast-app
         if ($LASTEXITCODE -ne 0) { throw "cargo build failed with exit code $LASTEXITCODE" }
     } finally {
         Pop-Location
     }
-    Write-Info "target\release\rewebcam.exe ($((Get-Item $desktopExe).Length) bytes)"
+    Write-Info "target\release\recast-app.exe ($((Get-Item $appExe).Length) bytes)"
 }
 
 # ---------------------------------------------------------------------------
-# 2. Phone app
+# 2. Command line tool
+# ---------------------------------------------------------------------------
+
+$cliExe = Join-Path $root 'target\release\recast.exe'
+
+if ($SkipDesktop) {
+    Write-Step 'Command line tool (skipped)'
+} else {
+    Write-Step 'Building the command line tool'
+    Push-Location $root
+    try {
+        cargo build --release -p recast-cli
+        if ($LASTEXITCODE -ne 0) { throw "cargo build failed with exit code $LASTEXITCODE" }
+    } finally {
+        Pop-Location
+    }
+    Write-Info "target\release\recast.exe ($((Get-Item $cliExe).Length) bytes)"
+}
+
+# ---------------------------------------------------------------------------
+# 3. Phone app
 # ---------------------------------------------------------------------------
 
 $apk = Join-Path $root 'android\app\build\outputs\apk\release\app-release.apk'
@@ -112,7 +142,7 @@ if ($SkipAndroid) {
 }
 
 # ---------------------------------------------------------------------------
-# 3. Runtime payload
+# 4. Runtime payload
 # ---------------------------------------------------------------------------
 
 Write-Step 'Checking the runtime payload'
@@ -121,7 +151,7 @@ $ffmpeg = Join-Path $toolsDir 'ffmpeg\ffmpeg.exe'
 $vcam64 = Join-Path $toolsDir 'vcam\x64\softcam.dll'
 $vcam86 = Join-Path $toolsDir 'vcam\x86\softcam.dll'
 
-foreach ($required in @($ffmpeg, $vcam64, $vcam86, $desktopExe, $apk)) {
+foreach ($required in @($ffmpeg, $vcam64, $vcam86, $appExe, $cliExe, $apk)) {
     if (-not (Test-Path $required)) {
         throw "Missing: $required`nBuild it with the instructions in docs\BUILDING.md."
     }
@@ -132,19 +162,20 @@ New-Item -ItemType Directory -Force -Path $payload | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $payload 'vcam\x64') | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $payload 'vcam\x86') | Out-Null
 
-Copy-Item $desktopExe (Join-Path $payload 'rewebcam.exe') -Force
+Copy-Item $appExe (Join-Path $payload 'recast-app.exe') -Force
+Copy-Item $cliExe (Join-Path $payload 'recast-cli.exe') -Force
 Copy-Item $ffmpeg (Join-Path $payload 'ffmpeg.exe') -Force
-Copy-Item $apk (Join-Path $payload 'RewebcamPhone.apk') -Force
+Copy-Item $apk (Join-Path $payload 'ReCastPhone.apk') -Force
 Copy-Item $vcam64 (Join-Path $payload 'vcam\x64\softcam.dll') -Force
 Copy-Item $vcam86 (Join-Path $payload 'vcam\x86\softcam.dll') -Force
 
 Write-Info 'payload staged in apps\launcher\payload'
 
 # ---------------------------------------------------------------------------
-# 4. Launcher
+# 5. Launcher
 # ---------------------------------------------------------------------------
 
-$launcherExe = Join-Path $root 'apps\launcher\target\release\Rewebcam.exe'
+$launcherExe = Join-Path $root 'apps\launcher\target\release\ReCast.exe'
 
 if ($SkipLauncher) {
     Write-Step 'Launcher (skipped)'
@@ -157,11 +188,11 @@ if ($SkipLauncher) {
     } finally {
         Pop-Location
     }
-    Write-Info "apps\launcher\target\release\Rewebcam.exe ($((Get-Item $launcherExe).Length) bytes)"
+    Write-Info "apps\launcher\target\release\ReCast.exe ($((Get-Item $launcherExe).Length) bytes)"
 }
 
 # ---------------------------------------------------------------------------
-# 5. Publish
+# 6. Publish
 # ---------------------------------------------------------------------------
 
 Write-Step 'Publishing the ready-to-use files'
@@ -169,53 +200,60 @@ Write-Step 'Publishing the ready-to-use files'
 New-Item -ItemType Directory -Force -Path $desktopOut | Out-Null
 New-Item -ItemType Directory -Force -Path $phoneOut | Out-Null
 
-Copy-Item $launcherExe (Join-Path $desktopOut 'Rewebcam.exe') -Force
-Copy-Item $apk (Join-Path $phoneOut 'RewebcamPhone.apk') -Force
+Copy-Item $launcherExe (Join-Path $desktopOut 'ReCast.exe') -Force
+Copy-Item $apk (Join-Path $phoneOut 'ReCastPhone.apk') -Force
 
-Write-Info "desktop\Rewebcam.exe        $(Get-FileSha256 (Join-Path $desktopOut 'Rewebcam.exe'))"
-Write-Info "phone\RewebcamPhone.apk    $(Get-FileSha256 (Join-Path $phoneOut 'RewebcamPhone.apk'))"
+Write-Info "desktop\ReCast.exe         $(Get-FileSha256 (Join-Path $desktopOut 'ReCast.exe'))"
+Write-Info "phone\ReCastPhone.apk     $(Get-FileSha256 (Join-Path $phoneOut 'ReCastPhone.apk'))"
 
 # ---------------------------------------------------------------------------
-# 6. Archive and checksums
+# 7. Archive and checksums
 # ---------------------------------------------------------------------------
 
 if (-not $NoZip) {
     Write-Step 'Creating the release archive'
 
     New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
-    $staging = Join-Path $releaseDir "ReWebCam-$Version"
+    $staging = Join-Path $releaseDir "ReCast-$Version"
     if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 
     New-Item -ItemType Directory -Force -Path (Join-Path $staging 'desktop') | Out-Null
     New-Item -ItemType Directory -Force -Path (Join-Path $staging 'phone') | Out-Null
 
-    Copy-Item (Join-Path $desktopOut 'Rewebcam.exe') (Join-Path $staging 'desktop\Rewebcam.exe') -Force
-    Copy-Item (Join-Path $phoneOut 'RewebcamPhone.apk') (Join-Path $staging 'phone\RewebcamPhone.apk') -Force
+    Copy-Item (Join-Path $desktopOut 'ReCast.exe') (Join-Path $staging 'desktop\ReCast.exe') -Force
+    Copy-Item (Join-Path $phoneOut 'ReCastPhone.apk') (Join-Path $staging 'phone\ReCastPhone.apk') -Force
     Copy-Item (Join-Path $root 'README.md') $staging -Force
     Copy-Item (Join-Path $root 'LICENSE') $staging -Force
+    Copy-Item (Join-Path $root 'CONTRIBUTING.md') $staging -Force
     Copy-Item (Join-Path $root 'THIRD_PARTY_NOTICES.md') $staging -Force
     Copy-Item (Join-Path $root 'docs\README-first.txt') $staging -Force
     Copy-Item (Join-Path $root 'docs\USER-GUIDE.md') (Join-Path $staging 'USER-GUIDE.md') -Force
+    New-Item -ItemType Directory -Force -Path (Join-Path $staging 'docs\images') | Out-Null
+    Copy-Item (Join-Path $root 'docs\ARCHITECTURE.md') (Join-Path $staging 'docs') -Force
+    Copy-Item (Join-Path $root 'docs\BUILDING.md') (Join-Path $staging 'docs') -Force
+    Copy-Item (Join-Path $root 'docs\USER-GUIDE.md') (Join-Path $staging 'docs') -Force
+    Copy-Item (Join-Path $root 'docs\images\*') (Join-Path $staging 'docs\images') -Force
 
-    $zip = Join-Path $releaseDir "ReWebCam-$Version-win64.zip"
+    $zip = Join-Path $releaseDir "ReCast-$Version-win64.zip"
     if (Test-Path $zip) { Remove-Item $zip -Force }
     Compress-Archive -Path (Join-Path $staging '*') -DestinationPath $zip -CompressionLevel Optimal
 
     $checksums = @(
-        "$(Get-FileSha256 $zip)  ReWebCam-$Version-win64.zip",
-        "$(Get-FileSha256 (Join-Path $desktopOut 'Rewebcam.exe'))  desktop/Rewebcam.exe",
-        "$(Get-FileSha256 (Join-Path $phoneOut 'RewebcamPhone.apk'))  phone/RewebcamPhone.apk",
+        "$(Get-FileSha256 $zip)  ReCast-$Version-win64.zip",
+        "$(Get-FileSha256 (Join-Path $desktopOut 'ReCast.exe'))  desktop/ReCast.exe",
+        "$(Get-FileSha256 (Join-Path $phoneOut 'ReCastPhone.apk'))  phone/ReCastPhone.apk",
         "$(Get-FileSha256 $ffmpeg)  ffmpeg.exe"
     )
     $checksums | Set-Content -Path (Join-Path $releaseDir 'SHA256SUMS.txt') -Encoding ascii
 
-    Write-Info "release\ReWebCam-$Version-win64.zip ($((Get-Item $zip).Length) bytes)"
+    Write-Info "release\ReCast-$Version-win64.zip ($((Get-Item $zip).Length) bytes)"
     Write-Info 'release\SHA256SUMS.txt'
 }
 
 Write-Step 'Done'
 Write-Host ''
-Write-Host "Desktop app : desktop\Rewebcam.exe" -ForegroundColor Green
-Write-Host "Phone app   : phone\RewebcamPhone.apk" -ForegroundColor Green
+Write-Host "Desktop app : desktop\ReCast.exe" -ForegroundColor Green
+Write-Host "Phone app   : phone\ReCastPhone.apk" -ForegroundColor Green
+Write-Host "CLI         : recast  (installed to %LOCALAPPDATA%\ReCast\bin on first run)" -ForegroundColor Green
 Write-Host ''
 Write-Host 'Commit the two files above before tagging a release.' -ForegroundColor Yellow

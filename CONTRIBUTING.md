@@ -1,6 +1,6 @@
-# Contributing to Rewebcam
+# Contributing to ReCast
 
-Thanks for helping out. Rewebcam is a small, self-contained project: a Rust desktop app, a
+Thanks for helping out. ReCast is a small, self-contained project: a Rust desktop app, a
 Rust launcher, a Kotlin phone app and the virtual camera filter that goes with them.
 
 ## Before you start
@@ -14,9 +14,9 @@ Rust launcher, a Kotlin phone app and the virtual camera filter that goes with t
 ## Development setup
 
 ```powershell
-git clone git@github.com:xxRelaXxx/ReWebCam.git
-cd ReWebCam
-cargo build --release -p rewebcam     # desktop app
+git clone git@github.com:xxRelaXxx/ReCast.git
+cd ReCast
+cargo build --release -p recast     # desktop app
 cd android; .\gradlew.bat assembleRelease   # phone app
 ```
 
@@ -30,10 +30,10 @@ address and PIN. Useful environment variables while developing:
 
 | Variable | Effect |
 | --- | --- |
-| `REWEBCAM_PIN` | Use a fixed pairing PIN. |
-| `REWEBCAM_FFMPEG` | Use a specific FFmpeg executable. |
-| `REWEBCAM_SOFTCAM_DLL` | Load a specific camera filter. |
-| `REWEBCAM_DUMP_STREAM` | Write the received H.264 stream to a file. |
+| `RECAST_PIN` | Use a fixed pairing PIN. |
+| `RECAST_FFMPEG` | Use a specific FFmpeg executable. |
+| `RECAST_SOFTCAM_DLL` | Load a specific camera filter. |
+| `RECAST_DUMP_STREAM` | Write the received H.264 stream to a file. |
 
 ## Code style
 
@@ -57,11 +57,11 @@ project. Third-party code must keep its own licence and be listed in
 `THIRD_PARTY_NOTICES.md`.
 
 If you contribute a change to the virtual camera filter, keep the patch against upstream
-softcam small and reviewable: `tools/vcam/rewebcam-softcam.patch` is regenerated from the
+softcam small and reviewable: `tools/vcam/recast-softcam.patch` is regenerated from the
 fork and is part of the release documentation.
 
 ## Reporting bugs
 
 Please include the Windows version, the phone model and Android version, how the phone
 was connected (USB or Wi-Fi), what you expected and what happened instead. The log file
-`%LOCALAPPDATA%\Rewebcam\launcher.log` is often helpful.
+`%LOCALAPPDATA%\ReCast\launcher.log` is often helpful.

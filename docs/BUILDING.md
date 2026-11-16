@@ -1,4 +1,4 @@
-# Building Rewebcam
+# Building ReCast
 
 Everything in this repository can be rebuilt from source. The release binaries are
 committed so that the project can be used without a build toolchain, but the sources are
@@ -31,21 +31,34 @@ java -version
 ## 2. The desktop app
 
 ```powershell
-cargo build --release -p rewebcam
+cargo build --release -p recast-app
 ```
 
-The result is `target\release\rewebcam.exe`. It is not the file you ship: the shipped
+The result is `target\release\recast-app.exe`. It is not the file you ship: the shipped
 file is the launcher, which embeds this binary.
 
 Useful environment variables while developing:
 
 | Variable | Effect |
 | --- | --- |
-| `REWEBCAM_FFMPEG` | Path to the FFmpeg executable to use. |
-| `REWEBCAM_SOFTCAM_DLL` | Path to the camera filter to load. |
-| `REWEBCAM_ADB` | Path to `adb.exe`. |
-| `REWEBCAM_PIN` | Fix the pairing PIN instead of generating a random one. |
-| `REWEBCAM_DUMP_STREAM` | Write the received H.264 stream to a file. |
+| `RECAST_FFMPEG` | Path to the FFmpeg executable to use. |
+| `RECAST_SOFTCAM_DLL` | Path to the camera filter to load. |
+| `RECAST_ADB` | Path to `adb.exe`. |
+| `RECAST_PIN` | Fix the pairing PIN instead of generating a random one. |
+| `RECAST_DUMP_STREAM` | Write the received H.264 stream to a file. |
+
+### Icons
+
+The artwork lives in `assets/recast-icon.jpg`. Every platform icon is generated from it:
+
+```powershell
+python -m pip install pillow
+python tools\make-icons.py
+```
+
+The script writes the multi-size `.ico` and PNG used by the app and the launcher, the raw
+RGBA window icon, and the Android launcher, round and adaptive-foreground mipmaps. Run it
+after replacing the source artwork.
 
 ---
 
@@ -71,7 +84,7 @@ committed. Either create that file or set `ANDROID_HOME`.
 
 ## 4. FFmpeg
 
-Rewebcam decodes the phone video with a separate FFmpeg executable. The committed binary
+ReCast decodes the phone video with a separate FFmpeg executable. The committed binary
 is a minimal build: H.264 in, raw video out, and only the `transpose`, `hflip`, `vflip`,
 `scale`, `format` and `null` filters. It is 2.5 MB instead of the 100 MB of a general
 purpose build.
@@ -106,7 +119,7 @@ The DLLs appear in `tools\vcam\source\x64\Release\softcam.dll` and
 and `tools\vcam\x86\softcam.dll`.
 
 The source is a fork of [softcam](https://github.com/tshino/softcam) v1.8.1 (MIT). The
-complete patch against upstream is in `tools/vcam/rewebcam-softcam.patch`, so the changes
+complete patch against upstream is in `tools/vcam/recast-softcam.patch`, so the changes
 can be reviewed or re-applied to a newer upstream release.
 
 ---
@@ -121,13 +134,13 @@ can be reviewed or re-applied to a newer upstream release.
 
 It
 
-1. builds the desktop app (`cargo build --release -p rewebcam`);
+1. builds the desktop app (`cargo build --release -p recast-app`);
 2. builds the phone app (`gradlew assembleRelease`), unless `-SkipAndroid` is given;
 3. checks that `tools\ffmpeg\ffmpeg.exe` and both camera DLLs are present;
 4. stages the runtime into `apps\launcher\payload`;
 5. builds the launcher (`cargo build --release --manifest-path apps\launcher\Cargo.toml`);
-6. copies the launcher to `desktop\Rewebcam.exe` and the APK to `phone\RewebcamPhone.apk`;
-7. writes the SHA-256 checksums and creates `release\ReWebCam-<version>-win64.zip`.
+6. copies the launcher to `desktop\ReCast.exe` and the APK to `phone\ReCastPhone.apk`;
+7. writes the SHA-256 checksums and creates `release\ReCast-<version>-win64.zip`.
 
 Useful switches:
 
@@ -143,21 +156,25 @@ launcher embeds it with `include_bytes!`, so it must exist before the launcher i
 
 ### Version numbers
 
-Three files carry the version and must be kept in sync:
+Five files carry the version and must be kept in sync:
 
 | File | Entry |
 | --- | --- |
-| `apps/desktop/Cargo.toml` | `version = "1.0.0"` |
+| `apps/app/Cargo.toml` | `version = "1.0.0"` |
+| `apps/cli/Cargo.toml` | `version = "1.0.0"` |
+| `apps/core/Cargo.toml` | `version = "1.0.0"` |
 | `apps/launcher/Cargo.toml` | `version = "1.0.0"` |
 | `android/app/build.gradle.kts` | `versionName = "1.0.0"` |
+
+`tools/build-release.ps1` refuses to build when these versions differ.
 
 ---
 
 ## 7. Releasing
 
 1. Update the three version numbers and `CHANGELOG.md`.
-2. Run `.\tools\build-release.ps1` and commit the rebuilt `desktop\Rewebcam.exe`,
-   `phone\RewebcamPhone.apk` and the launcher payload changes.
+2. Run `.\tools\build-release.ps1` and commit the rebuilt `desktop\ReCast.exe`,
+   `phone\ReCastPhone.apk` and the launcher payload changes.
 3. Tag and push:
 
    ```powershell
@@ -166,7 +183,7 @@ Three files carry the version and must be kept in sync:
    ```
 
 4. The `release` workflow (`.github/workflows/release.yml`) picks the tag up, builds
-   `ReWebCam-win64.zip`, downloads the matching FFmpeg source, writes the checksum file
+   `ReCast-win64.zip`, downloads the matching FFmpeg source, writes the checksum file
    and publishes everything as a GitHub release.
 
 The workflow does not compile anything: it packages the committed binaries. Always run
@@ -177,12 +194,16 @@ The workflow does not compile anything: it packages the committed binaries. Alwa
 ## 8. Repository layout
 
 ```text
-apps/desktop      Rust desktop application
+apps/app          Rust desktop application
+apps/cli          Rust command line tool
+apps/core         Shared Rust library
 apps/launcher     Rust one-file launcher and installer
 android/          Kotlin phone application
 desktop/          The shipped launcher (one file)
 phone/            The shipped APK (one file)
+assets/           Icon source artwork
 docs/             User guide, architecture notes, build notes, screenshots
+tools/make-icons.py  Regenerates the desktop and Android icons
 tools/ffmpeg      Minimal LGPL FFmpeg build, licences and build script
 tools/vcam        Virtual camera filter: binaries, source, patch, build notes
 tools/            build-release.ps1 and other helper scripts

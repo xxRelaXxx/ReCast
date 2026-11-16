@@ -164,7 +164,7 @@ CUnknown * Softcam::CreateInstance(
 }
 
 Softcam::Softcam(LPUNKNOWN lpunk, const GUID& clsid, HRESULT *phr) :
-    CSource(NAME("Rewebcam Virtual Camera"), lpunk, clsid),
+    CSource(NAME("ReCast Camera"), lpunk, clsid),
     m_frame_buffer(FrameBuffer::open()),
     m_valid(m_frame_buffer ? true : false),
     m_width(m_frame_buffer.width()),
@@ -175,7 +175,7 @@ Softcam::Softcam(LPUNKNOWN lpunk, const GUID& clsid, HRESULT *phr) :
     // Calling the SoftcamStream constructor results in calling the CBaseOutputPin
     // constructor which registers the instance to this Softcam instance by calling
     // CSource::AddPin().
-    (void)new SoftcamStream(phr, this, L"Rewebcam Virtual Camera Stream");
+    (void)new SoftcamStream(phr, this, L"ReCast Camera Stream");
 }
 
 
@@ -368,7 +368,7 @@ Softcam::releaseFrameBuffer()
 SoftcamStream::SoftcamStream(HRESULT *phr,
                          Softcam *pParent,
                          LPCWSTR pPinName) :
-    CSourceStream(NAME("Rewebcam Virtual Camera Stream"), phr, pParent, pPinName),
+    CSourceStream(NAME("ReCast Camera Stream"), phr, pParent, pPinName),
     m_valid(pParent->valid()),
     m_width(pParent->width()),
     m_height(pParent->height())
@@ -447,7 +447,15 @@ HRESULT SoftcamStream::FillBuffer(IMediaSample *pms)
             Timer::sleep(0.100f);
 
             const std::size_t size = calcDIBSize(m_width, m_height);
-            std::memcpy(pData, m_screenshot.get(), size);
+            if (m_screenshot)
+            {
+                std::memcpy(pData, m_screenshot.get(), size);
+            }
+            else
+            {
+                // Nothing was received yet, so the frame stays black.
+                ZeroMemory(pData, size);
+            }
         }
 
         CAutoLock lock(&m_critsec);

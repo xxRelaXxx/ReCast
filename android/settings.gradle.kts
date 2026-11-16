@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "RewebcamPhone"
+rootProject.name = "ReCastPhone"
 include(":app")

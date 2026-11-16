@@ -1,6 +1,6 @@
 # Third-party Rust crate licences
 
-This file lists every crate that is compiled into the Rewebcam desktop app and
+This file lists every crate that is compiled into the ReCast desktop app and
 launcher, taken from Cargo.lock. The licences themselves are published by
 the respective projects; the links point at the exact source tree of the
 version that is used.
@@ -278,6 +278,7 @@ Generated with cargo metadata --format-version 1.
 | proc-macro2 | 1.0.107 | MIT OR Apache-2.0 |
 | profiling | 1.0.18 | MIT OR Apache-2.0 |
 | pxfm | 0.1.30 | BSD-3-Clause OR Apache-2.0 |
+| qrcode | 0.14.1 | MIT OR Apache-2.0 |
 | quick-error | 2.0.1 | MIT/Apache-2.0 |
 | quick-xml | 0.30.0 | MIT |
 | quick-xml | 0.41.0 | MIT |
@@ -348,6 +349,7 @@ Generated with cargo metadata --format-version 1.
 | tiny-skia-path | 0.11.4 | BSD-3-Clause |
 | tinystr | 0.8.5 | Unicode-3.0 |
 | tokio | 1.54.1 | MIT |
+| toml | 0.5.11 | MIT/Apache-2.0 |
 | toml_datetime | 1.1.3+spec-1.1.0 | MIT OR Apache-2.0 |
 | toml_edit | 0.25.19+spec-1.1.0 | MIT OR Apache-2.0 |
 | toml_parser | 1.1.5+spec-1.1.0 | MIT OR Apache-2.0 |
@@ -429,6 +431,7 @@ Generated with cargo metadata --format-version 1.
 | windows_x86_64_msvc | 0.52.6 | MIT OR Apache-2.0 |
 | winit | 0.30.13 | Apache-2.0 |
 | winnow | 1.0.5 | MIT |
+| winres | 0.1.12 | MIT |
 | wit-bindgen | 0.57.1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
 | writeable | 0.6.4 | Unicode-3.0 |
 | x11-dl | 2.21.0 | MIT |

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="icon_background">#000000</color>
+
+    <!-- Minimal black and white palette, shared with the desktop app. -->
+    <color name="app_background">#0A0A0B</color>
+    <color name="app_surface">#141417</color>
+    <color name="app_surface_raised">#1C1C20</color>
+    <color name="app_preview">#030304</color>
+    <color name="app_outline">#2B2B31</color>
+    <color name="app_text">#F5F5F7</color>
+    <color name="app_text_muted">#9A9AA3</color>
+    <color name="app_text_faint">#6B6B75</color>
+    <color name="app_accent">#FFFFFF</color>
+    <color name="app_on_accent">#0A0A0B</color>
+    <color name="app_live">#46D18C</color>
+    <color name="app_warning">#E5C07B</color>
+    <color name="app_error">#E06C75</color>
+</resources>

@@ -34,16 +34,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          stage="ReWebCam-${VERSION}"
+          stage="ReCast-${VERSION}"
           mkdir -p "${stage}/desktop" "${stage}/phone"
 
-          cp desktop/Rewebcam.exe "${stage}/desktop/Rewebcam.exe"
-          cp phone/RewebcamPhone.apk "${stage}/phone/RewebcamPhone.apk"
+          cp desktop/ReCast.exe "${stage}/desktop/ReCast.exe"
+          cp phone/ReCastPhone.apk "${stage}/phone/ReCastPhone.apk"
           cp README.md LICENSE THIRD_PARTY_NOTICES.md "${stage}/"
           cp docs/README-first.txt "${stage}/README.txt"
           cp docs/USER-GUIDE.md "${stage}/USER-GUIDE.md"
 
-          zip -r "ReWebCam-${VERSION}-win64.zip" "${stage}"
+          zip -r "ReCast-${VERSION}-win64.zip" "${stage}"
           rm -rf "${stage}"
 
       - name: Download the matching FFmpeg source
@@ -69,9 +69,9 @@ jobs:
         run: |
           set -euo pipefail
           {
-            sha256sum "ReWebCam-${VERSION}-win64.zip"
-            sha256sum desktop/Rewebcam.exe
-            sha256sum phone/RewebcamPhone.apk
+            sha256sum "ReCast-${VERSION}-win64.zip"
+            sha256sum desktop/ReCast.exe
+            sha256sum phone/ReCastPhone.apk
             sha256sum "ffmpeg-9.0.2.tar.xz"
           } | sed "s#  #  #" > SHA256SUMS.txt
           cat SHA256SUMS.txt
@@ -85,16 +85,16 @@ jobs:
             exit 0
           fi
           {
-            echo "Rewebcam ${VERSION}."
+            echo "ReCast ${VERSION}."
             echo
             echo "Windows 10/11 desktop app and the Android phone app. No accounts, no ads,"
             echo "no telemetry: the phone streams directly to the PC over USB or Wi-Fi."
             echo
             echo "Downloads:"
             echo
-            echo "* ReWebCam-${VERSION}-win64.zip - both ready-to-use files in one archive"
-            echo "* Rewebcam.exe - the desktop app on its own"
-            echo "* RewebcamPhone.apk - the phone app"
+            echo "* ReCast-${VERSION}-win64.zip - both ready-to-use files in one archive"
+            echo "* ReCast.exe - the desktop app on its own"
+            echo "* ReCastPhone.apk - the phone app"
             echo "* ffmpeg-9.0.2.tar.xz - the LGPL source of the bundled FFmpeg decoder"
             echo "* SHA256SUMS.txt - checksums for all of the above"
             echo
@@ -132,9 +132,9 @@ jobs:
         run: |
           set -euo pipefail
           assets=(
-            "ReWebCam-${VERSION}-win64.zip"
-            "desktop/Rewebcam.exe"
-            "phone/RewebcamPhone.apk"
+            "ReCast-${VERSION}-win64.zip"
+            "desktop/ReCast.exe"
+            "phone/ReCastPhone.apk"
             "ffmpeg-9.0.2.tar.xz"
             "SHA256SUMS.txt"
           )
@@ -142,10 +142,10 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "The release already exists, replacing the assets."
             gh release upload "$TAG" "${assets[@]}" --clobber
-            gh release edit "$TAG" --title "Rewebcam ${VERSION}" --notes-file RELEASE_NOTES.md
+            gh release edit "$TAG" --title "ReCast ${VERSION}" --notes-file RELEASE_NOTES.md
           else
             gh release create "$TAG" "${assets[@]}" \
-              --title "Rewebcam ${VERSION}" \
+              --title "ReCast ${VERSION}" \
               --notes-file RELEASE_NOTES.md \
               --verify-tag
           fi

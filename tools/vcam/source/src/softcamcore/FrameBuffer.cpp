@@ -7,8 +7,8 @@
 namespace softcam {
 
 
-const char NamedMutexName[] = "Rewebcam Virtual Camera/NamedMutex";
-const char SharedMemoryName[] = "Rewebcam Virtual Camera/SharedMemory";
+const char NamedMutexName[] = "ReCast Camera/NamedMutex";
+const char SharedMemoryName[] = "ReCast Camera/SharedMemory";
 const uint8_t ProtocolVersion = 2;
 
 
