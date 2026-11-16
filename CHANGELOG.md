@@ -4,7 +4,53 @@ All notable changes to ReCast are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] — 2026-11-16
+## [1.0.1] - 2026-11-16
+
+A new interface, separate camera and microphone modes, a USB connection that needs no
+network at all and an installer with a setup window.
+
+### Added
+
+- **Installer window**: `desktop/ReCast.exe` now opens a setup window in the same style as
+  the app. It asks for the folder, offers a desktop shortcut, a start menu entry and a
+  start with Windows, shows a progress bar that fills up while the runtime is copied, and
+  finally offers to start ReCast and to remove the installer and its own files.
+- **Connection over the USB cable alone**: the new **Connect over USB** button opens a
+  tunnel through the cable (`adb reverse`) and starts the phone app with the address and
+  PIN filled in. The desktop shows whether the phone is connected over the cable or over
+  Wi-Fi.
+- **Microphone gain** from 0 to 300 % in the *Audio output* section. The gain is applied
+  before the signal is split, so it changes the level for the applications that record the
+  phone microphone and for the speaker monitor at the same time.
+- **Camera and microphone switches** on both sides. Either one can be switched off
+  without touching the other, and a microphone-only session never powers the camera.
+
+### Changed
+
+- **Desktop interface**: new monochrome design with Phosphor icons, a pairing screen with
+  the address, the PIN in separate boxes and the QR code in a white card, and a connected
+  view with the camera and microphone tiles, the camera settings, the virtual camera, the
+  audio output and the noise suppression. The scroll bar no longer covers the controls.
+- **Phone interface**: the camera and the microphone have their own card with a switch
+  and a state line, the preview follows the screen orientation and is never stretched,
+  and a card with the camera settings is hidden while the camera is off. The pairing
+  screen and the controls share the same layout in portrait and in landscape.
+- **Virtual camera** is now called **ReCast Camera**, the older entries are removed when
+  it is registered, and the filter no longer crashes when it is opened before the phone
+  sends a picture.
+- **Voice delay**: the audio queue converts the sample rate to the rate of the sound card
+  and stays short, so the voice no longer lags behind the mouth.
+- **QR scanner**: the code is read from a still picture instead of the preview, which
+  works on every phone, and the picture is no longer distorted.
+
+### Fixed
+
+- The phone preview was stretched and turned the wrong way in landscape.
+- The QR scanner never found a code on some phones.
+- A second copy of the app closed itself instead of opening a window that could not
+  connect.
+
+## [1.0.0] - 2026-11-16
 
 The first public release.
 
