@@ -100,11 +100,11 @@ using softcam::OutputFormat;
 using softcam::OutputKind;
 
 // Chrome's DirectShow sink tries I420, then YUY2, then UYVY, then RGB24,
-// then RGB32. A camera that only answers "RGB24, one size" is rejected.
-// The site then reports NotReadableError, which meeting pages show as
-// "camera already in use" or "this camera is not supported". The same
-// failure aborts a combined camera+microphone request.
+// then RGB32. Discord's call capturer uses that order and also accepts
+// NV12. A camera whose first type is bottom-up RGB24 connects, then the
+// channel stays black. The first offered type is I420, which both accept.
 const GUID SUBTYPE_I420 = FOURCCMap(MAKEFOURCC('I','4','2','0'));
+const GUID SUBTYPE_NV12 = FOURCCMap(MAKEFOURCC('N','V','1','2'));
 
 struct CatalogEntry
 {
@@ -117,11 +117,13 @@ struct CatalogEntry
 const CatalogEntry kCatalog[] =
 {
     { OutputKind::I420,  1280, 720, 30 },
+    { OutputKind::Nv12,  1280, 720, 30 },
     { OutputKind::Yuy2,  1280, 720, 30 },
     { OutputKind::Uyvy,  1280, 720, 30 },
     { OutputKind::Rgb32, 1280, 720, 30 },
     { OutputKind::Rgb24, 1280, 720, 30 },
     { OutputKind::I420,   640, 480, 30 },
+    { OutputKind::Nv12,   640, 480, 30 },
     { OutputKind::Yuy2,   640, 480, 30 },
     { OutputKind::Uyvy,   640, 480, 30 },
     { OutputKind::Rgb32,  640, 480, 30 },
@@ -136,6 +138,7 @@ const CatalogEntry kCatalog[] =
     { OutputKind::Yuy2,   960, 540, 30 },
     { OutputKind::Rgb24,  960, 540, 30 },
     { OutputKind::I420,  1920,1080, 30 },
+    { OutputKind::Nv12,  1920,1080, 30 },
     { OutputKind::Yuy2,  1920,1080, 30 },
     { OutputKind::Uyvy,  1920,1080, 30 },
     { OutputKind::Rgb32, 1920,1080, 30 },
@@ -159,7 +162,8 @@ std::size_t imageSize(OutputKind kind, int width, int height)
     const std::size_t pixels = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
     switch (kind)
     {
-    case OutputKind::I420:  return pixels * 3 / 2;
+    case OutputKind::I420:
+    case OutputKind::Nv12:  return pixels * 3 / 2;
     case OutputKind::Yuy2:  return pixels * 2;
     case OutputKind::Uyvy:  return pixels * 2;
     case OutputKind::Rgb32: return pixels * 4;
@@ -173,7 +177,8 @@ int bitsPerPixel(OutputKind kind)
 {
     switch (kind)
     {
-    case OutputKind::I420:  return 12;
+    case OutputKind::I420:
+    case OutputKind::Nv12:  return 12;
     case OutputKind::Yuy2:  return 16;
     case OutputKind::Uyvy:  return 16;
     case OutputKind::Rgb32: return 32;
@@ -187,6 +192,7 @@ DWORD compressionOf(OutputKind kind)
     switch (kind)
     {
     case OutputKind::I420:  return MAKEFOURCC('I','4','2','0');
+    case OutputKind::Nv12:  return MAKEFOURCC('N','V','1','2');
     case OutputKind::Yuy2:  return MAKEFOURCC('Y','U','Y','2');
     case OutputKind::Uyvy:  return MAKEFOURCC('U','Y','V','Y');
     case OutputKind::Rgb32:
@@ -200,6 +206,7 @@ GUID subtypeOf(OutputKind kind)
     switch (kind)
     {
     case OutputKind::I420:  return SUBTYPE_I420;
+    case OutputKind::Nv12:  return SUBTYPE_NV12;
     case OutputKind::Yuy2:  return MEDIASUBTYPE_YUY2;
     case OutputKind::Uyvy:  return MEDIASUBTYPE_UYVY;
     case OutputKind::Rgb32: return MEDIASUBTYPE_RGB32;
@@ -272,6 +279,11 @@ bool kindFromSubtype(const GUID& subtype, DWORD compression, OutputKind* out)
     if (subtype == SUBTYPE_I420 || compression == MAKEFOURCC('I','4','2','0'))
     {
         *out = OutputKind::I420;
+        return true;
+    }
+    if (subtype == SUBTYPE_NV12 || compression == MAKEFOURCC('N','V','1','2'))
+    {
+        *out = OutputKind::Nv12;
         return true;
     }
     if (subtype == MEDIASUBTYPE_YUY2 || compression == MAKEFOURCC('Y','U','Y','2'))
@@ -358,6 +370,29 @@ void writeI420(const uint8_t* bgr, int width, int height, uint8_t* dst)
                 const int cy = y / 2;
                 u_plane[cy * chroma_w + cx] = U;
                 v_plane[cy * chroma_w + cx] = V;
+            }
+        }
+    }
+}
+
+void writeNv12(const uint8_t* bgr, int width, int height, uint8_t* dst)
+{
+    // NV12 is top-down: full Y plane, then interleaved U,V pairs.
+    uint8_t* y_plane = dst;
+    uint8_t* uv_plane = y_plane + static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
+    for (int y = 0; y < height; y++)
+    {
+        const uint8_t* row = bgr + (std::size_t)y * width * 3;
+        for (int x = 0; x < width; x++)
+        {
+            uint8_t Y, U, V;
+            rgbToYuv(row[x * 3], row[x * 3 + 1], row[x * 3 + 2], &Y, &U, &V);
+            y_plane[y * width + x] = Y;
+            if ((y % 2) == 0 && (x % 2) == 0)
+            {
+                uint8_t* uv = uv_plane + (std::size_t)(y / 2) * width + x;
+                uv[0] = U;
+                uv[1] = V;
             }
         }
     }
@@ -488,7 +523,9 @@ STDMETHODIMP Softcam::NonDelegatingQueryInterface(REFIID riid, __deref_out void 
 OutputFormat Softcam::nativeFormat() const
 {
     OutputFormat format;
-    format.kind = OutputKind::Rgb24;
+    // Discord connects the first pin type when it does not call SetFormat.
+    // I420 is top-down and is the first type both Discord and Chrome accept.
+    format.kind = OutputKind::I420;
     if (m_frame_buffer)
     {
         format.width = m_frame_buffer.width();
@@ -1004,6 +1041,9 @@ HRESULT SoftcamStream::renderConnected(IMediaSample *pms)
     {
     case OutputKind::I420:
         writeI420(m_scaled.data(), format.width, format.height, pData);
+        break;
+    case OutputKind::Nv12:
+        writeNv12(m_scaled.data(), format.width, format.height, pData);
         break;
     case OutputKind::Yuy2:
         writeYuy2(m_scaled.data(), format.width, format.height, pData, false);

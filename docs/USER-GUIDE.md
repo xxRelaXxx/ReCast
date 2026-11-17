@@ -30,11 +30,13 @@ ReCast-1.0.0/
 
 ### The desktop app
 
-`desktop/ReCast.exe` is a self-contained installer. It opens a small setup window in the
-same black and white style as the app and walks through three steps:
+`desktop/ReCast.exe` is a self-contained installer. It opens a setup window in the
+same black and white style as the app. Drag the title band to move it, and drag an
+edge to resize it. The window walks through three steps:
 
-1. **Where should ReCast live?** The default is `%LOCALAPPDATA%\ReCast`, but any
-   folder works. **Browse** opens a folder picker.
+1. **Where should ReCast live?** The suggestion is `%LOCALAPPDATA%\ReCast`. Any
+   folder on any drive works, including `X:\ReCast`. **Browse** opens the Windows
+   folder dialog, which lists every drive. The drive buttons do the same.
 2. **Shortcuts and start.** Tick a shortcut on the desktop, an entry in the start menu
    and, if you like, a start with Windows.
 3. **Install.** The runtime is copied to the chosen folder and the virtual camera is
@@ -276,6 +278,14 @@ application that records the phone hears the change, and on the speaker monitor.
 * Two programs can open ReCast Camera at the same time. Two tabs inside the same
   Chrome window still share Chrome's one camera process, and that process opens a
   DirectShow camera only once.
+
+### Discord shows the camera but the channel stays black
+
+* Quit Discord completely, including the tray icon, then open it again.
+* In Voice & Video, choose **ReCast Camera**. Older names from a previous
+  install (*DirectShow Softcam*, *Rewebcam Virtual Camera*) still open the
+  same camera.
+* Turn the camera off and on once in the channel so Discord opens the new filter.
 
 ### A website shows no picture
 

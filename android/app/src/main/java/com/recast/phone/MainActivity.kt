@@ -318,20 +318,13 @@ class MainActivity : Activity() {
     /**
      * The size of the buffer the camera fills.
      *
-     * The camera hands the preview a frame that matches the orientation of
-     * the screen, so in portrait the frame is turned and the buffer is
-     * swapped. Requesting the stream size instead would squeeze the picture.
+     * This is the stream size, in the camera's own orientation. The view
+     * turns and fits that buffer. Asking for a swapped size makes the camera
+     * crop or stretch the frame before it ever reaches the screen.
      */
     private fun previewBufferSize(): Pair<Int, Int> {
         val res = service?.selectedResolution()
-        val width = res?.width ?: 1920
-        val height = res?.height ?: 1080
-        val rotation = displayRotationDegrees()
-        return if (rotation == 90 || rotation == 270) {
-            width to height
-        } else {
-            height to width
-        }
+        return (res?.width ?: 1920) to (res?.height ?: 1080)
     }
 
     private fun requestRequiredPermissions() {
@@ -559,14 +552,7 @@ class MainActivity : Activity() {
                 ) {
                     return
                 }
-                preview.surfaceTexture?.let {
-                    val rotation = displayRotationDegrees()
-                    if (rotation == 90 || rotation == 270) {
-                        it.setDefaultBufferSize(resolution.width, resolution.height)
-                    } else {
-                        it.setDefaultBufferSize(resolution.height, resolution.width)
-                    }
-                }
+                preview.surfaceTexture?.setDefaultBufferSize(resolution.width, resolution.height)
                 service?.selectResolution(resolution.width, resolution.height)
             }
 
@@ -641,54 +627,41 @@ class MainActivity : Activity() {
     }
 
     /**
-     * Fits the camera buffer into the preview without distortion.
-     *
-     * The camera hands the preview a frame that is already turned for the
-     * screen, so the picture only needs the stretch of the TextureView
-     * undone and a scale that fills the view instead of letterboxing it.
+     * Draws the whole camera frame inside the preview without stretching it.
+     * A vertical phone shows the tall frame and a horizontal phone the wide
+     * one. The picture inside the frame stays upright as the phone turns.
      */
     private fun updatePreviewTransform() {
         val viewWidth = preview.width.toFloat()
         val viewHeight = preview.height.toFloat()
-        if (viewWidth <= 0f || viewHeight <= 0f) return
-
         val (bufferWidth, bufferHeight) = previewBufferSize()
-
-        // How far the picture has to be turned for the screen.
-        val turn = when (displayRotationDegrees()) {
-            90 -> 270f
-            180 -> 180f
-            270 -> 90f
-            else -> 0f
-        }
-
-        val uprightWidth = if (turn == 90f || turn == 270f) bufferHeight else bufferWidth
-        val uprightHeight = if (turn == 90f || turn == 270f) bufferWidth else bufferHeight
+        val draw = PreviewFit.draw(
+            viewWidth,
+            viewHeight,
+            bufferWidth.toFloat(),
+            bufferHeight.toFloat(),
+            service?.previewRotation() ?: 0,
+            displayRotationDegrees()
+        ) ?: return
 
         val centerX = viewWidth / 2f
         val centerY = viewHeight / 2f
-        // Scale so the picture covers the view; the overflow is cropped.
-        val cover = maxOf(viewWidth / uprightWidth, viewHeight / uprightHeight)
-
         val matrix = Matrix()
-        matrix.setScale(bufferWidth / viewWidth, bufferHeight / viewHeight, centerX, centerY)
-        matrix.postRotate(turn, centerX, centerY)
-        matrix.postScale(cover, cover, centerX, centerY)
+        matrix.setScale(draw.scaleX, draw.scaleY, centerX, centerY)
+        if (draw.rotationDegrees != 0) {
+            matrix.postRotate(draw.rotationDegrees.toFloat(), centerX, centerY)
+        }
         if (isFrontCamera()) {
             matrix.postScale(-1f, 1f, centerX, centerY)
         }
         preview.setTransform(matrix)
     }
 
-    /// The current rotation of the screen, in degrees.
+    /// How far the phone is turned from its natural pose, in degrees.
     private fun displayRotationDegrees(): Int {
         val rotation = try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                display?.rotation ?: Surface.ROTATION_0
-            } else {
-                @Suppress("DEPRECATION")
-                windowManager.defaultDisplay.rotation
-            }
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.rotation
         } catch (_: Exception) {
             Surface.ROTATION_0
         }

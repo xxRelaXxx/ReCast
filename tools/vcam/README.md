@@ -45,12 +45,13 @@ a few changes:
   selected the camera keep working until the old registration is removed.
 * **A version byte** in the frame-buffer protocol, so an old and a new build cannot
   misinterpret each other's frames.
-* **The formats browsers actually connect.** The filter offers I420, YUY2, UYVY, RGB24
-  and RGB32 at the usual sizes (320x240, 640x360, 640x480, 960x540, 1280x720 and
-  1920x1080, at 15, 30 and 60 fps where listed). It scales the sender's picture into
-  the size the application picked, and it still answers when the phone is not connected
-  yet. A camera that offered only one exact RGB24 mode was reported by sites as
-  "already in use" or "not supported".
+* **The formats browsers and Discord actually connect.** The first type is I420.
+  The filter also offers NV12, YUY2, UYVY, RGB24 and RGB32 at the usual sizes
+  (320x240, 640x360, 640x480, 960x540, 1280x720 and 1920x1080, at 15, 30 and 60 fps
+  where listed). It scales the sender's picture into the size the application picked,
+  and it still answers when the phone is not connected yet. A camera that offered
+  only one exact RGB24 mode was reported by sites as "already in use" or "not
+  supported", and Discord's call showed a black picture.
 
 The rebrand against upstream is in `recast-softcam.patch`. The browser-format work lives
 in the source and has not been folded back into that patch.

@@ -20,10 +20,11 @@ void checkMediaType320x240(const AM_MEDIA_TYPE *pmt)
 {
     ASSERT_NE( pmt, nullptr );
     EXPECT_EQ( pmt->majortype, MEDIATYPE_Video );
-    EXPECT_EQ( pmt->subtype, MEDIASUBTYPE_RGB24 );
+    const GUID subtype_i420 = FOURCCMap(MAKEFOURCC('I','4','2','0'));
+    EXPECT_EQ( pmt->subtype, subtype_i420 );
     EXPECT_EQ( pmt->bFixedSizeSamples, TRUE );
     EXPECT_EQ( pmt->bTemporalCompression, FALSE );
-    EXPECT_EQ( pmt->lSampleSize, 320 * 240 * 3u );
+    EXPECT_EQ( pmt->lSampleSize, 320 * 240 * 3u / 2u );
     EXPECT_EQ( pmt->formattype, FORMAT_VideoInfo );
     ASSERT_GE( pmt->cbFormat, sizeof(VIDEOINFOHEADER) );
 
@@ -35,9 +36,9 @@ void checkMediaType320x240(const AM_MEDIA_TYPE *pmt)
     EXPECT_EQ( pFormat->bmiHeader.biWidth, 320 );
     EXPECT_EQ( pFormat->bmiHeader.biHeight, 240 );
     EXPECT_EQ( pFormat->bmiHeader.biPlanes, 1 );
-    EXPECT_EQ( pFormat->bmiHeader.biBitCount, 24 );
-    EXPECT_EQ( pFormat->bmiHeader.biCompression, (DWORD)BI_RGB );
-    EXPECT_EQ( pFormat->bmiHeader.biSizeImage, 320 * 240 * 3u );
+    EXPECT_EQ( pFormat->bmiHeader.biBitCount, 12 );
+    EXPECT_EQ( pFormat->bmiHeader.biCompression, (DWORD)MAKEFOURCC('I','4','2','0') );
+    EXPECT_EQ( pFormat->bmiHeader.biSizeImage, 320 * 240 * 3u / 2u );
 }
 
 // This is a dummy GUID representing nothing.
@@ -289,7 +290,7 @@ TEST_F(Softcam, IAMStreamConfigNoServer)
     hr = amsc->GetFormat(&pmt);
     EXPECT_EQ( hr, S_OK );
     ASSERT_NE( pmt, nullptr );
-    EXPECT_EQ( pmt->subtype, MEDIASUBTYPE_RGB24 );
+    EXPECT_EQ( pmt->subtype, FOURCCMap(MAKEFOURCC('I','4','2','0')) );
     DeleteMediaType(pmt);
     pmt = nullptr;
 
@@ -377,6 +378,8 @@ TEST_F(Softcam, IAMStreamConfigNormal)
     pmt = nullptr;
 
     bool saw_yuy2 = false;
+    bool saw_nv12 = false;
+    const GUID subtype_nv12 = FOURCCMap(MAKEFOURCC('N','V','1','2'));
     for (int i = 0; i < count; i++)
     {
         hr = amsc->GetStreamCaps(i, &pmt, scc.get());
@@ -385,10 +388,15 @@ TEST_F(Softcam, IAMStreamConfigNormal)
         {
             saw_yuy2 = true;
         }
+        if (pmt && pmt->subtype == subtype_nv12)
+        {
+            saw_nv12 = true;
+        }
         DeleteMediaType(pmt);
         pmt = nullptr;
     }
     EXPECT_TRUE( saw_yuy2 );
+    EXPECT_TRUE( saw_nv12 );
 }
 
 TEST_F(Softcam, IBaseFilterEnumPins)
@@ -919,7 +927,7 @@ TEST_F(SoftcamStream, CSourceStreamGetMediaTypeNoServer)
     CMediaType mt;
     hr = m_stream->GetMediaType(&mt);
     EXPECT_EQ( hr, NOERROR );
-    EXPECT_EQ( mt.subtype, MEDIASUBTYPE_RGB24 );
+    EXPECT_EQ( mt.subtype, FOURCCMap(MAKEFOURCC('I','4','2','0')) );
 }
 
 TEST_F(SoftcamStream, CSourceStreamGetMediaTypeNullPointer)

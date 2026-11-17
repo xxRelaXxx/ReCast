@@ -32,6 +32,7 @@ import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.min
 
 /**
  * In-app QR scanner. It uses Camera2 and the offline ZXing core, so pairing
@@ -107,6 +108,10 @@ class QrScannerActivity : Activity() {
                 width: Int,
                 height: Int
             ) {
+                // The view would otherwise adopt its own size as the buffer
+                // size and stretch the camera into that shape.
+                val (bufferWidth, bufferHeight) = previewBufferSize()
+                surfaceTexture.setDefaultBufferSize(bufferWidth, bufferHeight)
                 applyPreviewTransform()
             }
 
@@ -400,11 +405,10 @@ class QrScannerActivity : Activity() {
         val viewWidth = preview.width.toFloat()
         val viewHeight = preview.height.toFloat()
         if (viewWidth <= 0f || viewHeight <= 0f) return
-        // The camera hands the preview a frame that is turned for the screen,
-        // so the buffer is the size of the screen and the picture is only
-        // scaled to fill the view.
         val (bufferWidth, bufferHeight) = previewBufferSize()
-        val turn = when (displayRotationDegrees()) {
+        // Screen rotation only. The sensor's extra 90° is for the still
+        // picture, and applying it here turns a vertical phone sideways.
+        val turn = when (screenRotation()) {
             90 -> 270f
             180 -> 180f
             270 -> 90f
@@ -412,21 +416,26 @@ class QrScannerActivity : Activity() {
         }
         val uprightWidth = if (turn == 90f || turn == 270f) bufferHeight else bufferWidth
         val uprightHeight = if (turn == 90f || turn == 270f) bufferWidth else bufferHeight
-
-        val cover = maxOf(viewWidth / uprightWidth, viewHeight / uprightHeight)
+        // Fit the whole frame. A uniform scale keeps the shape; filling the
+        // screen was what pulled the picture taller than the scene.
+        val fit = min(viewWidth / uprightWidth, viewHeight / uprightHeight)
         val cx = viewWidth / 2f
         val cy = viewHeight / 2f
         val matrix = Matrix()
-        matrix.setScale(bufferWidth / viewWidth, bufferHeight / viewHeight, cx, cy)
-        matrix.postRotate(turn, cx, cy)
-        matrix.postScale(cover, cover, cx, cy)
+        matrix.setScale(
+            bufferWidth * fit / viewWidth,
+            bufferHeight * fit / viewHeight,
+            cx,
+            cy
+        )
+        if (turn != 0f) matrix.postRotate(turn, cx, cy)
         if (frontCamera) matrix.postScale(-1f, 1f, cx, cy)
         preview.setTransform(matrix)
     }
 
-    /// The size of the preview buffer, turned like the screen.
+    /// Buffer shape that matches the screen, so a vertical phone stays upright.
     private fun previewBufferSize(): Pair<Int, Int> {
-        val rotation = displayRotationDegrees()
+        val rotation = screenRotation()
         return if (rotation == 90 || rotation == 270) {
             previewSize.width to previewSize.height
         } else {
@@ -434,9 +443,9 @@ class QrScannerActivity : Activity() {
         }
     }
 
-    /// The rotation of the screen in degrees.
-    private fun displayRotationDegrees(): Int {
-        val rotation = try {
+    /// How far the phone itself is turned, ignoring the camera sensor.
+    private fun screenRotation(): Int {
+        return try {
             when (windowManager.defaultDisplay.rotation) {
                 Surface.ROTATION_90 -> 90
                 Surface.ROTATION_180 -> 180
@@ -446,7 +455,6 @@ class QrScannerActivity : Activity() {
         } catch (_: Exception) {
             0
         }
-        return rotation
     }
 
     private fun closeCamera() {

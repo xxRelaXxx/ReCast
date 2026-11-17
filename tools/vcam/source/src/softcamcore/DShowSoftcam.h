@@ -14,6 +14,7 @@ enum class OutputKind
 {
     Rgb24 = 0,
     I420,
+    Nv12,
     Yuy2,
     Uyvy,
     Rgb32,

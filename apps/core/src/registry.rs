@@ -59,12 +59,19 @@ pub fn register_virtual_camera(install_dir: &Path) -> Result<(), String> {
         ("Software\\Classes", x64.as_str()),
         ("Software\\Classes\\WOW6432Node", x86.as_str()),
     ] {
-        // Remove entries of earlier builds so that only one camera shows up.
-        for stale in [OLD_FILTER_NAME, PREVIOUS_FILTER_NAME, VIRTUAL_FILTER_NAME] {
-            delete_registry_tree(&format!(
-                "{classes_root}\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{stale}"
-            ));
-        }
+        // "ReCast Virtual Camera" is refused by some apps because of the word
+        // "virtual". The older names stay registered as aliases: Discord keeps
+        // them selected from a previous install and would otherwise open a
+        // filter that does not receive the current frames.
+        delete_registry_tree(&format!(
+            "{classes_root}\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{VIRTUAL_FILTER_NAME}"
+        ));
+        // The previous installer used the friendly name as the instance key.
+        // The CLSID key below replaces it, so the name key must not remain
+        // and list a second ReCast Camera.
+        delete_registry_tree(&format!(
+            "{classes_root}\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{FILTER_NAME}"
+        ));
 
         for (clsid, name) in [(NEW_CLSID, FILTER_NAME), (LEGACY_CLSID, OLD_FILTER_NAME)] {
             let base = format!("{classes_root}\\CLSID\\{clsid}");
@@ -77,10 +84,16 @@ pub fn register_virtual_camera(install_dir: &Path) -> Result<(), String> {
             )?;
         }
 
-        let instance = format!("{classes_root}\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{FILTER_NAME}");
-        reg_set_string(&instance, Some("FriendlyName"), FILTER_NAME)?;
-        reg_set_string(&instance, Some("CLSID"), NEW_CLSID)?;
-        reg_set_binary(&instance, Some("FilterData"), &FILTER_DATA)?;
+        // The instance key is the CLSID, the same shape OBS uses. A key that
+        // is only the friendly name is dropped by Discord's device list.
+        register_instance(classes_root, NEW_CLSID, FILTER_NAME, NEW_CLSID)?;
+        register_instance(classes_root, OLD_FILTER_NAME, OLD_FILTER_NAME, NEW_CLSID)?;
+        register_instance(
+            classes_root,
+            PREVIOUS_FILTER_NAME,
+            PREVIOUS_FILTER_NAME,
+            NEW_CLSID,
+        )?;
     }
 
     Ok(())
@@ -93,6 +106,7 @@ pub fn unregister_virtual_camera() -> Result<(), String> {
             delete_registry_tree(&format!("{classes_root}\\CLSID\\{clsid}"));
         }
         for name in [
+            NEW_CLSID,
             FILTER_NAME,
             OLD_FILTER_NAME,
             PREVIOUS_FILTER_NAME,
@@ -108,7 +122,7 @@ pub fn unregister_virtual_camera() -> Result<(), String> {
 
 /// Returns true when the camera is registered for the current user.
 pub fn is_registered() -> bool {
-    let path = format!("Software\\Classes\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{FILTER_NAME}");
+    let path = format!("Software\\Classes\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{NEW_CLSID}");
     let wide_path = to_wide(&path);
     let mut key: HKEY = std::ptr::null_mut();
     let result = unsafe {
@@ -128,6 +142,19 @@ pub fn is_registered() -> bool {
     } else {
         false
     }
+}
+
+fn register_instance(
+    classes_root: &str,
+    key_name: &str,
+    friendly: &str,
+    clsid: &str,
+) -> Result<(), String> {
+    let instance = format!("{classes_root}\\CLSID\\{CAMERA_CATEGORY}\\Instance\\{key_name}");
+    reg_set_string(&instance, Some("FriendlyName"), friendly)?;
+    reg_set_string(&instance, Some("CLSID"), clsid)?;
+    reg_set_binary(&instance, Some("FilterData"), &FILTER_DATA)?;
+    Ok(())
 }
 
 fn reg_set_string(path: &str, name: Option<&str>, value: &str) -> Result<(), String> {

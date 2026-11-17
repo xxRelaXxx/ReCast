@@ -6,6 +6,27 @@ All notable changes to ReCast are documented here. The format follows
 
 ## Unreleased
 
+## [1.0.3] - 2026-11-17
+
+### Fixed
+
+- Discord channel video stays black when ReCast Camera is selected. The camera
+  now offers I420 first, which Discord's call capturer displays, and also offers
+  NV12. Older names from previous installs (*DirectShow Softcam* and *Rewebcam
+  Virtual Camera*) open the same camera. Quit Discord completely, including the
+  tray icon, and turn the camera on once so it loads the new filter.
+- The installer window can be dragged from the title band and resized from the
+  edges. The text and controls use the width of the window.
+- The folder picker lists every drive Windows has assigned, including drives
+  such as X:. Installation is accepted in any folder. `%LOCALAPPDATA%\ReCast`
+  is only the suggested starting path.
+- The phone camera preview keeps the frame's real shape, and the picture
+  inside it stays upright. A vertical phone shows the tall frame and a
+  horizontal phone the wide one. Turning the phone no longer stretches the
+  preview or swaps those two shapes.
+- The QR scanner preview keeps its shape. Holding the phone upright no longer
+  turns the finder a quarter-turn or stretches it taller than the scene.
+
 ## [1.0.2] - 2026-11-16
 
 ### Changed
@@ -112,6 +133,7 @@ The first public release.
 - Video and audio travel directly between the phone and the PC and never leave the
   local network or the USB link.
 
+[1.0.3]: https://github.com/xxRelaXxx/ReWebCam/releases/tag/v1.0.3
 [1.0.2]: https://github.com/xxRelaXxx/ReWebCam/releases/tag/v1.0.2
 [1.0.1]: https://github.com/xxRelaXxx/ReWebCam/releases/tag/v1.0.1
 [1.0.0]: https://github.com/xxRelaXxx/ReCast/releases/tag/v1.0.0
